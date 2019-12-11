@@ -1,0 +1,34 @@
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+import config
+
+n_in, n_out = config.nb_kids * 7, config.nb_kids ** 2
+n_1, n_2, n_3 = 256, 512, 512
+batch_size = 10
+
+
+class Kiwi(nn.Module):
+    def __init__(self):
+        super(Kiwi, self).__init__()
+        self.fc1 = nn.Linear(n_in, n_1)
+        self.bn1 = nn.BatchNorm1d(n_1)
+        self.fc2 = nn.Linear(n_1, n_2)
+        self.bn2 = nn.BatchNorm1d(n_2)
+        self.fc3 = nn.Linear(n_2, n_3)
+        self.bn3 = nn.BatchNorm1d(n_3)
+        self.fc4 = nn.Linear(n_3, n_out)
+        self.bn4 = nn.BatchNorm1d(n_out)
+        self.sigmoid = nn.Sigmoid()
+
+    def forward(self, x):
+        x = F.relu(self.fc1(x))
+        x = self.bn1(x)
+        x = F.relu(self.fc2(x))
+        x = self.bn2(x)
+        x = F.relu(self.fc3(x))
+        x = self.bn3(x)
+        x = F.relu(self.fc4(x))
+        x = self.bn4(x)
+        x = self.sigmoid(x)
+        return x
