@@ -7,18 +7,14 @@ import math
 
 
 def solve_head_pose(landmarks):
-    if landmarks.shape == (3, 68):
-        landmarks = np.transpose(landmarks)
     if type(landmarks) == list:
         landmarks = np.array(landmarks)
+    if landmarks.shape == (3, 68):
+        landmarks = np.transpose(landmarks)
     assert landmarks.shape == (68, 3), "bad landmark shape"
-
-    l_eye = landmarks[42:48, :]
-
     l_eye_center = np.mean(landmarks[36:42, :], axis=0)
     r_eye_center = np.mean(landmarks[42:48, :], axis=0)
     mouth_center = np.mean(landmarks[48:68, :], axis=0)
-    # print(l_eye_center, r_eye_center, mouth_center)
 
     dY = r_eye_center[1] - l_eye_center[1]
     dX = r_eye_center[0] - l_eye_center[0]
