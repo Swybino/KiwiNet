@@ -22,10 +22,6 @@ class LabelPreprocessor:
             # row_next = self.labels.iloc[index+1]
 
 
-
-
-            # new_labels.append(row, ignore_index=True)
-
         print(df, "#####")
         df.to_csv("path")
         return
