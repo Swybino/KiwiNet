@@ -3,13 +3,14 @@ import torch.nn as nn
 import torch.nn.functional as F
 import config
 
-n_in, n_out = config.nb_kids * 7, config.nb_kids ** 2
-n_1, n_2, n_3 = 256, 512, 512
 batch_size = 10
 
 
 class Kiwi(nn.Module):
-    def __init__(self):
+    def __init__(self, kids_nb):
+        self.kids_nb = kids_nb
+        n_in, n_out = self.kids_nb * 7, self.kids_nb ** 2
+        n_1, n_2, n_3 = 256, 512, 512
         super(Kiwi, self).__init__()
         self.fc1 = nn.Linear(n_in, n_1)
         self.bn1 = nn.BatchNorm1d(n_1)
@@ -22,6 +23,8 @@ class Kiwi(nn.Module):
         self.sigmoid = nn.Sigmoid()
 
     def forward(self, x):
+        x = x.type(torch.FloatTensor)
+        x = x.view(-1, self.kids_nb * 7)
         x = F.relu(self.fc1(x))
         x = self.bn1(x)
         x = F.relu(self.fc2(x))
@@ -31,4 +34,6 @@ class Kiwi(nn.Module):
         x = F.relu(self.fc4(x))
         x = self.bn4(x)
         x = self.sigmoid(x)
+
+        x = x.view(-1, self.kids_nb, self.kids_nb)
         return x

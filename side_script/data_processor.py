@@ -17,6 +17,10 @@ class DataProcessor:
         self.max_yaw = 90
         self.max_pitch = 50
 
+    def max_len(self):
+        return len(os.listdir(self.root_dir))  # dir is your directory path
+
+
     def set_max_angles(self, yaw, pitch):
         self.max_yaw = yaw
         self.max_pitch = pitch
