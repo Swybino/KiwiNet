@@ -69,49 +69,16 @@ class Viewer:
         cv2.line(self.img, (int(tdx), int(tdy)), (int(x2), int(y2)), (0, 255, 0), 2)
         cv2.line(self.img, (int(tdx), int(tdy)), (int(x3), int(y3)), (255, 56, 0), 2)
 
-    # def plot_pose_box(image, Ps, pts68s, color=(40, 255, 0), line_width=2):
-    #     ''' Draw a 3D box as annotation of pose. Ref:https://github.com/yinguobing/head-pose-estimation/blob/master/pose_estimator.py
-    #     Args:
-    #         image: the input image
-    #         P: (3, 4). Affine Camera Matrix.
-    #         kpt: (2, 68) or (3, 68)
-    #     '''
-    #     image = image.copy()
-    #     if not isinstance(pts68s, list):
-    #         pts68s = [pts68s]
-    #     if not isinstance(Ps, list):
-    #         Ps = [Ps]
-    #     for i in range(len(pts68s)):
-    #         pts68 = pts68s[i]
-    #         llength = calc_hypotenuse(pts68)
-    #         point_3d = build_camera_box(llength)
-    #         P = Ps[i]
-    #
-    #         # Map to 2d image points
-    #         point_3d_homo = np.hstack((point_3d, np.ones([point_3d.shape[0], 1])))  # n x 4
-    #         point_2d = point_3d_homo.dot(P.T)[:, :2]
-    #
-    #         point_2d[:, 1] = - point_2d[:, 1]
-    #         point_2d[:, :2] = point_2d[:, :2] - np.mean(point_2d[:4, :2], 0) + np.mean(pts68[:2, :27], 1)
-    #         point_2d = np.int32(point_2d.reshape(-1, 2))
-    #
-    #         # Draw all the lines
-    #         cv2.polylines(image, [point_2d], True, color, line_width, cv2.LINE_AA)
-    #         cv2.line(image, tuple(point_2d[1]), tuple(
-    #             point_2d[6]), color, line_width, cv2.LINE_AA)
-    #         cv2.line(image, tuple(point_2d[2]), tuple(
-    #             point_2d[7]), color, line_width, cv2.LINE_AA)
-    #         cv2.line(image, tuple(point_2d[3]), tuple(
-    #             point_2d[8]), color, line_width, cv2.LINE_AA)
-    #
-    #     return image
+    def plt_results(self, results):
+        pt1, pt2 = 0, 0
+        cv2.arrowedLine(self.img, pt1, pt2, (0, 0, 255), 5)
 
     def show(self):
         cv2.imshow("img", self.img)
         cv2.waitKey()
         cv2.destroyAllWindows()
 
-    def evaluation(self, bboxes=None):
+    def landmarks_evaluation(self, bboxes=None):
         eval = []
         cv2.imshow("img", self.img)
         while True:

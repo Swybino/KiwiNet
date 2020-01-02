@@ -10,7 +10,7 @@ class Kiwi(nn.Module):
     def __init__(self, kids_nb):
         self.kids_nb = kids_nb
         n_in, n_out = self.kids_nb * 7, self.kids_nb ** 2
-        n_1, n_2, n_3 = 256, 512, 512
+        n_1, n_2, n_3 = 256, 512, 1024
         super(Kiwi, self).__init__()
         self.fc1 = nn.Linear(n_in, n_1)
         self.bn1 = nn.BatchNorm1d(n_1)

@@ -81,7 +81,7 @@ class Evaluator:
 
             # eval = viewer.show()
 
-            eval = viewer.evaluation(bboxes=bboxes_list)
+            eval = viewer.landmarks_evaluation(bboxes=bboxes_list)
             for i, a in enumerate(eval):
                 self.results[idx][names_list[i]] = a
             self.save_results(dump_file_path)

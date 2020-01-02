@@ -2,7 +2,6 @@ import cv2
 import numpy as np
 import os
 import os.path as osp
-from sklearn.preprocessing import normalize
 import math
 
 

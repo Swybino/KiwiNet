@@ -20,6 +20,10 @@ class FoADataset(Dataset):
                 on a sample.
         """
         self.labels = pd.read_csv(csv_file)
+        self.names = []
+        for c in self.labels.columns:
+            self.names.append(c)
+        self.names.pop(0)
         self.root_dir = root_dir
         self.transform = transform
         self.data_processor = DataProcessor(root_dir, video_title)
@@ -30,11 +34,12 @@ class FoADataset(Dataset):
     def __getitem__(self, idx):
         if torch.is_tensor(idx):
             idx = idx.tolist()
+
         labels = self.labels.iloc[idx]
         output = labels.to_dict()
         frame = int(output.pop("frame", None))
         inputs = []
-        for name in output.keys():
+        for name in self.names:
             bbox = self.data_processor.get_item(frame, name, config.BBOX_KEY)
             confidence = self.data_processor.get_item(frame, name, config.CONFIDENCE_KEY)
             pose = [x * confidence for x in self.data_processor.get_item(frame, name, config.POSE_KEY)]
@@ -44,7 +49,6 @@ class FoADataset(Dataset):
 
         if self.transform:
             sample = self.transform(sample)
-
         return sample
 
 
@@ -82,7 +86,7 @@ class Binarization(object):
             else:
                 out_data[idx][idx] = 1
         sample["out"] = np.array(out_data)
-        return sample
+        return {"inputs": sample["inputs"], "out": np.array(out_data)}
 
 
 class Normalization(object):

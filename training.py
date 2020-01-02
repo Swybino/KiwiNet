@@ -9,14 +9,29 @@ from torch.utils.data import Dataset, DataLoader
 
 
 def custom_criterion(output, target):
-    criterion = nn.CrossEntropyLoss()
+    # nn.functional.binary_cross_entropy(input, target)
+    # criterion = nn.CrossEntropyLoss()
+    # target = target.type(torch.LongTensor)
     losses = []
-    target = target.type(torch.LongTensor)
     for i in range(6):
         print(output[:, i, :], target[:, i, :])
-        losses.append(criterion(output[:, i, :], target[:, i, :]))
+        losses.append(nn.functional.binary_cross_entropy(output[:, i, :], target[:, i, :]))
     print(losses)
-    return losses
+    losses = torch.Tensor(losses)
+    loss = torch.mean(losses)
+    print(loss)
+    print(nn.functional.binary_cross_entropy(output, target))
+    return nn.functional.binary_cross_entropy(output, target)
+
+
+def output_processing(output, names_list):
+    result = {}
+    for idx, name in enumerate(names_list):
+        argmax = output[idx].max(0)[1]
+        if argmax == idx:
+            result[name] = 'z'
+        else:
+            result[name] = names_list[argmax]
 
 
 if __name__ == '__main__':
@@ -25,7 +40,7 @@ if __name__ == '__main__':
     # Assuming that we are on a CUDA machine, this should print a CUDA device:
     # print(device)
 
-    dataset = FoADataset("data/labels/171214_1.csv", "data/171214_1/correction_angle", "171214_1",
+    dataset = FoADataset("data/labels/171214_1.csv", "data/171214_1/correction_angle_100_50", "171214_1",
                          transform=transforms.Compose([
                              RandomPermutations(),
                              Binarization(size=6),
@@ -36,36 +51,29 @@ if __name__ == '__main__':
     train_length = int(len(dataset) * 0.8)
     lengths = [train_length, len(dataset) - train_length]
     train_set, test_set = torch.utils.data.random_split(dataset, lengths)
+    test_loader = DataLoader(test_set, batch_size=4,
+                             shuffle=False, num_workers=1)
 
-    train_loader = DataLoader(train_set, batch_size=2,
-                              shuffle=True, num_workers=8)
-    test_loader = DataLoader(test_set, batch_size=2,
-                             shuffle=False, num_workers=8)
+    train_loader = DataLoader(train_set, batch_size=16,
+                              shuffle=False, num_workers=4)
 
     net = Kiwi(config.nb_kids)
     # criterion = nn.MultiLabelMarginLoss()
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.SGD(net.parameters(), lr=0.001)
+    optimizer = optim.SGD(net.parameters(), lr=0.005)
 
-    for epoch in range(10):  # loop over the dataset multiple times
+    for epoch in range(100):  # loop over the dataset multiple times
         running_loss = 0.0
         for i, data in enumerate(train_loader, 0):
             # get the inputs; data is a list of [inputs, labels]
             inputs, target = data['inputs'], data['out']
             # zero the parameter gradientse
-            # optimizer.zero_grad()
+            optimizer.zero_grad()
 
             outputs = net(inputs)
-            # outputs = outputs.view(-1, 36)
-            # labels = labels.view(-1, 36)
-            print(outputs, outputs.type(), target, target.type(), sep="\n")
-            custom_criterion(outputs, target)
-            target = target.type(torch.LongTensor)
-            loss = criterion(outputs, target)
-
+            loss = nn.functional.binary_cross_entropy(outputs, target)
             loss.backward()
             optimizer.step()
-            # print statistics
             running_loss += loss.item()
 
             if i % 20 == 19:  # print every 2000 mini-batches
@@ -75,3 +83,17 @@ if __name__ == '__main__':
         torch.save(net.state_dict(), "model/model.pt")
 
     print('Finished Training')
+
+    correct = 0
+    total = 0
+    with torch.no_grad():
+        for data in test_loader:
+            images, labels = data
+            outputs = net(images)
+
+            _, predicted = torch.max(outputs.data, 1)
+            total += labels.size(0)
+            correct += (predicted == labels).sum().item()
+
+    print('Accuracy of the network on the 10000 test images: %d %%' % (
+            100 * correct / total))
