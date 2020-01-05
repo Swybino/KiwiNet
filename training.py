@@ -8,20 +8,38 @@ import config
 from torch.utils.data import Dataset, DataLoader
 
 
-def custom_criterion(output, target):
-    # nn.functional.binary_cross_entropy(input, target)
-    # criterion = nn.CrossEntropyLoss()
-    # target = target.type(torch.LongTensor)
+def mean_cross_entropy_loss(output, target):
+    """
+    Compute the mean cross entropy of the
+    :param output: output of the network
+    :type output: torch.Tensor
+    :param target: target
+    :type target: torch.Tensor
+    :return:
+    :rtype:
+    """
+    criterion = nn.CrossEntropyLoss()
     losses = []
-    for i in range(6):
-        print(output[:, i, :], target[:, i, :])
-        losses.append(nn.functional.binary_cross_entropy(output[:, i, :], target[:, i, :]))
-    print(losses)
-    losses = torch.Tensor(losses)
-    loss = torch.mean(losses)
-    print(loss)
-    print(nn.functional.binary_cross_entropy(output, target))
-    return nn.functional.binary_cross_entropy(output, target)
+    for i in range(output.size(1)):
+        # print(output[:, i, :], target[:, i])
+        losses.append(criterion(output[:, i, :], target[:, i]))
+
+    loss = torch.mean(torch.stack(losses))
+    return loss
+
+
+def accuracy(net, test_loader):
+    correct = 0
+    total = 0
+    with torch.no_grad():
+        for data in test_loader:
+            inputs, labels = data['inputs'], data['out']
+            outputs = net(inputs)
+            _, predicted = torch.max(outputs.data, 2)
+            total += target.size(0) * target.size(1)
+            correct += (predicted == labels).sum().item()
+    print(correct, total)
+    return correct / total
 
 
 def output_processing(output, names_list):
@@ -61,7 +79,7 @@ if __name__ == '__main__':
     # criterion = nn.MultiLabelMarginLoss()
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.SGD(net.parameters(), lr=0.005)
-
+    loss_history = []
     for epoch in range(100):  # loop over the dataset multiple times
         running_loss = 0.0
         for i, data in enumerate(train_loader, 0):
@@ -71,7 +89,7 @@ if __name__ == '__main__':
             optimizer.zero_grad()
 
             outputs = net(inputs)
-            loss = nn.functional.binary_cross_entropy(outputs, target)
+            loss = mean_cross_entropy_loss(outputs, target)
             loss.backward()
             optimizer.step()
             running_loss += loss.item()
@@ -80,20 +98,12 @@ if __name__ == '__main__':
                 print('[%d, %5d] loss: %.3f' %
                       (epoch + 1, i + 1, running_loss / 20))
                 running_loss = 0.0
+
+            loss_history.append((epoch, i, loss.item()))
         torch.save(net.state_dict(), "model/model.pt")
+        print("Accuracy: %0.4f" %accuracy(net, test_loader))
+    print(loss_history)
 
     print('Finished Training')
 
-    correct = 0
-    total = 0
-    with torch.no_grad():
-        for data in test_loader:
-            images, labels = data
-            outputs = net(images)
 
-            _, predicted = torch.max(outputs.data, 1)
-            total += labels.size(0)
-            correct += (predicted == labels).sum().item()
-
-    print('Accuracy of the network on the 10000 test images: %d %%' % (
-            100 * correct / total))

@@ -80,12 +80,12 @@ class Binarization(object):
         keys = list(result_data.keys())
         out_data = []
         for idx, k in enumerate(keys):
-            out_data.append([0 for _ in range(self.size)])
             if result_data[k] in keys:
-                out_data[idx][keys.index(result_data[k])] = 1
+                out_data.append(keys.index(result_data[k]))
             else:
-                out_data[idx][idx] = 1
+                out_data.append(idx)
         sample["out"] = np.array(out_data)
+        # return sample
         return {"inputs": sample["inputs"], "out": np.array(out_data)}
 
 
@@ -106,10 +106,10 @@ class ToTensor(object):
 
     def __call__(self, sample):
         inputs, output = sample["inputs"], sample['out']
-        sample["inputs"] = torch.from_numpy(inputs)
-        sample['out'] = torch.from_numpy(output)
-        sample['inputs'] = sample['inputs'].type(torch.FloatTensor)
-        sample['out'] = sample['out'].type(torch.FloatTensor)
+        sample["inputs"] = torch.from_numpy(inputs).type(torch.FloatTensor)
+        sample['out'] = torch.from_numpy(output).type(torch.LongTensor)
+        # sample['inputs'] = sample['inputs']
+        # sample['out'] = sample['out']
         return sample
 
 
@@ -126,6 +126,6 @@ if __name__ == "__main__":
                             shuffle=True, num_workers=1)
 
     for i_batch, sample_batched in enumerate(dataloader):
-        print(i_batch, sample_batched["inputs"], sample_batched['result'], sample_batched['out'], "##########",
+        print(i_batch, sample_batched, "##########",
               sep="\n")
         break

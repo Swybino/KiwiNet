@@ -111,15 +111,15 @@ class Evaluator:
                 total = total + 1
                 # print(self.data[name][config.CONFIDENCE_KEY])
                 if conf == 1:
-                    condition_positive = condition_positive + 1
+                    condition_positive += 1
                 elif conf == 0:
-                    condition_negative = condition_negative + 1
+                    condition_negative += 1
                 if self.dp.get_item(int(idx), name, config.CONFIDENCE_KEY) == conf:
-                    right_count = right_count + 1
+                    right_count += 1
                     if conf == 1:
-                        true_positive = true_positive + 1
+                        true_positive += 1
                     elif conf == 0:
-                        true_negative = true_negative + 1
+                        true_negative += 1
         true_positive_rate = true_positive / condition_positive
         true_negative_rate = true_negative / condition_negative
         results = {"true_positive_rate": true_positive_rate,

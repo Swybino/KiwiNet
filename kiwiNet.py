@@ -19,8 +19,6 @@ class Kiwi(nn.Module):
         self.fc3 = nn.Linear(n_2, n_3)
         self.bn3 = nn.BatchNorm1d(n_3)
         self.fc4 = nn.Linear(n_3, n_out)
-        self.bn4 = nn.BatchNorm1d(n_out)
-        self.sigmoid = nn.Sigmoid()
 
     def forward(self, x):
         x = x.type(torch.FloatTensor)
@@ -32,8 +30,7 @@ class Kiwi(nn.Module):
         x = F.relu(self.fc3(x))
         x = self.bn3(x)
         x = F.relu(self.fc4(x))
-        x = self.bn4(x)
-        x = self.sigmoid(x)
-
+        # x = self.bn4(x)
         x = x.view(-1, self.kids_nb, self.kids_nb)
+
         return x
