@@ -1,3 +1,5 @@
+import pickle
+
 from dataset import FoADataset, RandomPermutations, Binarization, ToTensor, Normalization
 from kiwiNet import Kiwi
 from torchvision import transforms
@@ -38,7 +40,6 @@ def accuracy(net, test_loader):
             _, predicted = torch.max(outputs.data, 2)
             total += target.size(0) * target.size(1)
             correct += (predicted == labels).sum().item()
-    print(correct, total)
     return correct / total
 
 
@@ -52,13 +53,18 @@ def output_processing(output, names_list):
             result[name] = names_list[argmax]
 
 
+def save_history(file_path, data):
+    with open(file_path, 'wb') as f:
+        pickle.dump(data, f)
+    print("file written")
+
 if __name__ == '__main__':
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     # Assuming that we are on a CUDA machine, this should print a CUDA device:
     # print(device)
 
-    dataset = FoADataset("data/labels/171214_1.csv", "data/171214_1/correction_angle_100_50", "171214_1",
+    dataset = FoADataset("data/labels", "data/inputs",
                          transform=transforms.Compose([
                              RandomPermutations(),
                              Binarization(size=6),
@@ -73,14 +79,15 @@ if __name__ == '__main__':
                              shuffle=False, num_workers=1)
 
     train_loader = DataLoader(train_set, batch_size=16,
-                              shuffle=False, num_workers=4)
+                              shuffle=False, num_workers=8)
 
     net = Kiwi(config.nb_kids)
+    # net.load_state_dict(torch.load("model/model.pt"))
+
     # criterion = nn.MultiLabelMarginLoss()
-    criterion = nn.CrossEntropyLoss()
-    optimizer = optim.SGD(net.parameters(), lr=0.005)
+    optimizer = optim.SGD(net.parameters(), lr=0.001)
     loss_history = []
-    for epoch in range(100):  # loop over the dataset multiple times
+    for epoch in range(200):  # loop over the dataset multiple times
         running_loss = 0.0
         for i, data in enumerate(train_loader, 0):
             # get the inputs; data is a list of [inputs, labels]
@@ -99,10 +106,12 @@ if __name__ == '__main__':
                       (epoch + 1, i + 1, running_loss / 20))
                 running_loss = 0.0
 
-            loss_history.append((epoch, i, loss.item()))
+            loss_history.append((epoch, i, round(loss.item(),3)))
         torch.save(net.state_dict(), "model/model.pt")
-        print("Accuracy: %0.4f" %accuracy(net, test_loader))
-    print(loss_history)
+
+        save_history("model/history.pickle", loss_history)
+        if epoch % 10 == 9:
+            print("Accuracy: %0.4f" %accuracy(net, test_loader))
 
     print('Finished Training')
 

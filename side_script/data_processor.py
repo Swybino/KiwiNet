@@ -7,11 +7,12 @@ from side_script.pose_estimator import solve_head_pose
 import numpy as np
 from side_script.range_processor import RangeProcessor
 
+
 class DataProcessor:
     def __init__(self, root_dir, video_title):
         self.root_dir = root_dir
         self.video_title = video_title
-        self.data_length = 9900
+        self.data_length = 8000
         self.frame_idx = None
         self.frame_data = None
         self.max_yaw = 90
@@ -152,14 +153,14 @@ class DataProcessor:
                     blank_count = blank_count + 1
         return round(blank_count / total_count, 2)
 
-    def data_initialization(self):
+    def data_initialization(self, out_dir=None):
         bbox_data = self.import_data(os.path.join(self.root_dir, "%s.txt" % self.video_title))
         for idx in range(self.data_length):
             self.frame_idx = idx
             self.get_original_frame_data(bbox_data)
             self.remove_lists()
             self.radian_to_degrees()
-            self.write_frame_data()
+            self.write_frame_data(out_dir)
 
     def remove_lists(self):
         for name, data in self.frame_data.items():
@@ -188,9 +189,16 @@ class DataProcessor:
 
 if __name__ == "__main__":
 
-    dp = DataProcessor("data/171214_1/correction_angle_100_55", "171214_1")
-    dp.do_all(dp.fill_in_gradient, "", start=1, end=9899)
+    # dp = DataProcessor("data\\171214_2\\original", "171214_2")
+    # dp.data_initialization("data/171214_2/correction_size")
+
+    dp = DataProcessor("data/171214_2/correction_size", "171214_2")
+    dp.do_all(dp.compare_sizes, "data/171214_2/correction_size")
+    dp = DataProcessor("data/171214_2/correction_size", "171214_2")
+    dp.set_max_angles(100, 55)
+    dp.do_all(dp.detect_high_angles, "data/171214_2/correction_angle")
     print("OK")
+
     # print(dp.percentage_blank())
 
     # dp = DataProcessor("data/171214_1/correction_size", "171214_1")
@@ -208,10 +216,3 @@ if __name__ == "__main__":
     # dp.set_max_angles(80, 50)
     # dp.do_all(dp.detect_high_angles, "data/171214_1/correction_angle_80_50")
 
-    # print(dp.percentage_blank())
-
-    # dp.data_initialization()
-    # dp.radian_to_degrees()
-
-    # dp.detect_high_angles()
-    # dp.write_data("data/171214_1.json")

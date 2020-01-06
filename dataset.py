@@ -12,7 +12,7 @@ from random import random
 class FoADataset(Dataset):
     """Face Landmarks dataset."""
 
-    def __init__(self, csv_file, root_dir, video_title, transform=None):
+    def __init__(self, csv_dir, root_dir, transform=None):
         """
         Args:
             csv_file (string): Path to the csv file with annotations.
@@ -20,30 +20,38 @@ class FoADataset(Dataset):
             transform (callable, optional): Optional transform to be applied
                 on a sample.
         """
-        self.labels = pd.read_csv(csv_file)
-
-        # self.names = []
-        # for c in self.labels.columns:
-        #     self.names.append(c)
-        # self.names.pop(0)
+        self.labels_list = []
+        for csv_file in os.listdir(csv_dir):
+            self.labels_list.append(pd.read_csv(os.path.join(csv_dir, csv_file)))
 
         self.root_dir = root_dir
         self.transform = transform
-        self.data_processor = DataProcessor(root_dir, video_title)
+        self.data_processors = [DataProcessor(root_dir, csv_file[:-4]) for csv_file in os.listdir(csv_dir)]
 
     def __len__(self):
-        return len(self.labels)
+        count = 0
+        for label in self.labels_list:
+            count += len(label)
+        return count
+
+    def get_index(self, idx):
+        for label_idx, label in enumerate(self.labels_list):
+            if idx >= len(label):
+                idx -= len(label)
+            else:
+                return label_idx, idx
 
     def __getitem__(self, idx):
 
         if torch.is_tensor(idx):
             idx = idx.tolist()
-        labels = self.labels.iloc[idx]
+        label_idx, item_idx = self.get_index(idx)
+        labels = self.labels_list[label_idx].iloc[item_idx]
         output = labels.to_dict()
         frame = int(output.pop("frame", None))
         inputs = []
         for name in output.keys():
-            data = self.data_processor.get_item(frame, name)
+            data = self.data_processors[label_idx].get_item(frame, name)
             if data is not None:
                 bbox = data[config.BBOX_KEY]
                 confidence = data[config.CONFIDENCE_KEY]
@@ -63,6 +71,7 @@ class RandomPermutations(object):
     """
 
     """
+
     def __init__(self):
         return
 
@@ -81,6 +90,7 @@ class RandomDelete(object):
     """
 
     """
+
     def __init__(self):
         return
 
@@ -88,9 +98,9 @@ class RandomDelete(object):
         proba = 0.1
         keys = list(sample["result"].keys())
         for idx in range(len(keys)):
-            if random() > 1-proba:
+            if random() > 1 - proba:
                 sample["result"][keys[idx]] = "z"
-                sample["inputs"][idx] *= 0
+                sample["inputs"][idx][-3:] *= 0
                 return sample
         return sample
 
@@ -138,14 +148,8 @@ class ToTensor(object):
 
 
 if __name__ == "__main__":
-    dataset = FoADataset("data/labels/171214_1.csv", "data/171214_1/correction_angle", "171214_1",
-                         transform=transforms.Compose([
-                             RandomDelete(),
-                             RandomPermutations(),
-                             Binarization(size=6),
-                             Normalization(img_size=640),
-                             ToTensor()
-                         ]))
+    dataset = FoADataset("data/labels", "data/inputs", transform=transforms.Compose(
+        [RandomDelete(), RandomPermutations(), Binarization(size=6), Normalization(img_size=640), ToTensor()]))
 
     dataloader = DataLoader(dataset, batch_size=1,
                             shuffle=True, num_workers=1)
