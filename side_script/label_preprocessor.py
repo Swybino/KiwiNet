@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 
+
 class LabelPreprocessor:
     def __init__(self, csv_file):
         self.labels = pd.read_csv(csv_file)
@@ -19,10 +20,10 @@ class LabelPreprocessor:
             last_row = row
             # row_next = self.labels.iloc[index+1]
 
-        df.to_csv("data/labels/171214_1.csv", index=False)
+        df.to_csv("data/labels/171214_2.csv", index=False)
         return
 
 
 if __name__ == "__main__":
-    lp = LabelPreprocessor("data/labels/171214_1_original.csv")
+    lp = LabelPreprocessor("data/labels/171214_2_original.csv")
     lp.extend_data()

@@ -32,8 +32,12 @@ class DataProcessor:
         if name is None:
             return self.frame_data
         else:
-            if key is None:
+            if name not in self.frame_data:
+                return None
+            elif key is None:
                 return self.frame_data[name]
+            elif key not in self.frame_data[name]:
+                return None
             else:
                 return self.frame_data[name][key]
 

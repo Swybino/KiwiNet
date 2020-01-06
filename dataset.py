@@ -6,6 +6,7 @@ from side_script.data_processor import DataProcessor
 import numpy as np
 import config
 from torchvision import transforms, utils
+from random import random
 
 
 class FoADataset(Dataset):
@@ -20,10 +21,12 @@ class FoADataset(Dataset):
                 on a sample.
         """
         self.labels = pd.read_csv(csv_file)
-        self.names = []
-        for c in self.labels.columns:
-            self.names.append(c)
-        self.names.pop(0)
+
+        # self.names = []
+        # for c in self.labels.columns:
+        #     self.names.append(c)
+        # self.names.pop(0)
+
         self.root_dir = root_dir
         self.transform = transform
         self.data_processor = DataProcessor(root_dir, video_title)
@@ -32,20 +35,24 @@ class FoADataset(Dataset):
         return len(self.labels)
 
     def __getitem__(self, idx):
+
         if torch.is_tensor(idx):
             idx = idx.tolist()
-
         labels = self.labels.iloc[idx]
         output = labels.to_dict()
         frame = int(output.pop("frame", None))
         inputs = []
-        for name in self.names:
-            bbox = self.data_processor.get_item(frame, name, config.BBOX_KEY)
-            confidence = self.data_processor.get_item(frame, name, config.CONFIDENCE_KEY)
-            pose = [x * confidence for x in self.data_processor.get_item(frame, name, config.POSE_KEY)]
-            inputs.append(bbox + pose)
+        for name in output.keys():
+            data = self.data_processor.get_item(frame, name)
+            if data is not None:
+                bbox = data[config.BBOX_KEY]
+                confidence = data[config.CONFIDENCE_KEY]
+                pose = [x * confidence for x in data[config.POSE_KEY]]
+                inputs.append(bbox + pose)
+            else:
+                inputs.append([0 for _ in range(7)])
         inputs = np.array(inputs)
-        sample = {"inputs": inputs, "result": output}
+        sample = {"inputs": inputs, "result": output, "frame": frame}
 
         if self.transform:
             sample = self.transform(sample)
@@ -56,7 +63,6 @@ class RandomPermutations(object):
     """
 
     """
-
     def __init__(self):
         return
 
@@ -68,6 +74,24 @@ class RandomPermutations(object):
         sample["inputs"] = np.array([sample["inputs"][i] for i in idxs])
         sample["result"] = {keys[i]: out[keys[i]] for i in idxs}
 
+        return sample
+
+
+class RandomDelete(object):
+    """
+
+    """
+    def __init__(self):
+        return
+
+    def __call__(self, sample):
+        proba = 0.1
+        keys = list(sample["result"].keys())
+        for idx in range(len(keys)):
+            if random() > 1-proba:
+                sample["result"][keys[idx]] = "z"
+                sample["inputs"][idx] *= 0
+                return sample
         return sample
 
 
@@ -116,6 +140,7 @@ class ToTensor(object):
 if __name__ == "__main__":
     dataset = FoADataset("data/labels/171214_1.csv", "data/171214_1/correction_angle", "171214_1",
                          transform=transforms.Compose([
+                             RandomDelete(),
                              RandomPermutations(),
                              Binarization(size=6),
                              Normalization(img_size=640),
