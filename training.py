@@ -1,3 +1,4 @@
+import argparse
 import pickle
 
 from dataset import FoADataset, RandomPermutations, Binarization, ToTensor, Normalization
@@ -58,6 +59,7 @@ def save_history(file_path, data):
         pickle.dump(data, f)
     print("file written")
 
+
 if __name__ == '__main__':
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -81,11 +83,11 @@ if __name__ == '__main__':
     train_loader = DataLoader(train_set, batch_size=16,
                               shuffle=False, num_workers=8)
 
-    net = Kiwi(config.nb_kids)
+    net = Kiwi(config.nb_kids, [512, 512,1024,1024,1024])
     # net.load_state_dict(torch.load("model/model.pt"))
 
     # criterion = nn.MultiLabelMarginLoss()
-    optimizer = optim.SGD(net.parameters(), lr=0.001)
+    optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
     loss_history = []
     for epoch in range(200):  # loop over the dataset multiple times
         running_loss = 0.0
@@ -106,13 +108,20 @@ if __name__ == '__main__':
                       (epoch + 1, i + 1, running_loss / 20))
                 running_loss = 0.0
 
-            loss_history.append((epoch, i, round(loss.item(),3)))
-        torch.save(net.state_dict(), "model/model.pt")
+            loss_history.append((epoch, i, round(loss.item(), 3)))
+        torch.save(net.state_dict(), "model/model.512x2.1024x3.pt")
 
-        save_history("model/history.pickle", loss_history)
+        save_history("model/history.512x2.1024x3.pickle", loss_history)
         if epoch % 10 == 9:
-            print("Accuracy: %0.4f" %accuracy(net, test_loader))
+            print("Accuracy: %0.4f" % accuracy(net, test_loader))
 
     print('Finished Training')
 
 
+    parser = argparse.ArgumentParser(description='Kiwi Training')
+
+    parser.add_argument('-f', '--files', nargs='+',
+                        help='image files paths fed into network, single or multiple images')
+    parser.add_argument('-m', '--mode', default='cpu', type=str, help='gpu or cpu mode')
+
+    args = parser.parse_args()
