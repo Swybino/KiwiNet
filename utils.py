@@ -22,3 +22,21 @@ def bbox_landmarks_match(bbox, landmarks):
 
 def gradient(y1, y2, t=1):
     return (y2 - y1) / t
+
+
+def build_suffix(param_list):
+    string_char = ""
+    count = 1
+    last_value = ""
+    for idx, value in enumerate(param_list):
+        if value == last_value:
+            count += 1
+            last_value = "%sx%d" %(last_value, count)
+        else:
+            count = 1
+            string_char += "." + str(last_value)
+            last_value = value
+    string_char += "." + str(last_value)
+    return string_char[1:]
+
+

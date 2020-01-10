@@ -115,12 +115,12 @@ class Binarization(object):
         out_data = []
         for idx, k in enumerate(keys):
             if result_data[k] in keys:
-                out_data.append(keys.index(result_data[k]))
+                out_data.append([1, keys.index(result_data[k])])
             else:
-                out_data.append(idx)
-        sample["out"] = np.array(out_data)
+                out_data.append([0, idx])
+        sample['labels'] = np.array(out_data)
         # return sample
-        return {"inputs": sample["inputs"], "out": np.array(out_data)}
+        return {"inputs": sample["inputs"], 'labels': np.array(out_data)}
 
 
 class Normalization(object):
@@ -139,11 +139,11 @@ class ToTensor(object):
     """Convert ndarrays in sample to Tensors."""
 
     def __call__(self, sample):
-        inputs, output = sample["inputs"], sample['out']
+        inputs, output = sample["inputs"], sample['labels']
         sample["inputs"] = torch.from_numpy(inputs).type(torch.FloatTensor)
-        sample['out'] = torch.from_numpy(output).type(torch.LongTensor)
+        sample['labels'] = torch.from_numpy(output).type(torch.LongTensor)
         # sample['inputs'] = sample['inputs']
-        # sample['out'] = sample['out']
+        # sample['labels'] = sample['labels']
         return sample
 
 

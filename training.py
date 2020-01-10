@@ -1,6 +1,7 @@
 import argparse
 import pickle
 
+import utils
 from dataset import FoADataset, RandomPermutations, Binarization, ToTensor, Normalization
 from kiwiNet import Kiwi
 from torchvision import transforms
@@ -11,7 +12,31 @@ import config
 from torch.utils.data import Dataset, DataLoader
 
 
-def mean_cross_entropy_loss(output, target):
+def multi_entropy_loss(output, target):
+    """
+    Compute the mean cross entropy of the
+    :param output: output of the network
+    :type output: torch.Tensor
+    :param target: target
+    :type target: torch.Tensor
+    :return:
+    :rtype:
+    """
+    bce = nn.BCELoss()
+    sigmoid = nn.Sigmoid()
+    losses = []
+    for i in range(output.size(1)):
+        w = torch.ones(output.size(1))
+        w[i] = 0.20
+        ce = nn.CrossEntropyLoss(weight=w)
+        losses.append(ce(output[:, i, 1:], target[:, i, 1]))
+        losses.append(bce(sigmoid(output[:, i, 0]), target[:, i, 0].type(torch.FloatTensor)))
+
+    # return loss
+    return sum(losses)
+
+
+def sum_cross_entropy_loss(output, target):
     """
     Compute the mean cross entropy of the
     :param output: output of the network
@@ -27,20 +52,25 @@ def mean_cross_entropy_loss(output, target):
         # print(output[:, i, :], target[:, i])
         losses.append(criterion(output[:, i, :], target[:, i]))
 
-    loss = torch.mean(torch.stack(losses))
+    loss = sum(losses)
+    # loss = torch.mean(torch.stack(losses))
     return loss
 
 
 def accuracy(net, test_loader):
     correct = 0
     total = 0
+    sigmoid = nn.Sigmoid()
     with torch.no_grad():
-        for data in test_loader:
-            inputs, labels = data['inputs'], data['out']
+        for test_data in test_loader:
+            inputs, target = test_data['inputs'], test_data['labels']
             outputs = net(inputs)
-            _, predicted = torch.max(outputs.data, 2)
+
+            look_bool = sigmoid(outputs.data[:, :, 0]) > 0.5
+            _, predicted = torch.max(outputs.data[:, :, 1:], 2)
+
             total += target.size(0) * target.size(1)
-            correct += (predicted == labels).sum().item()
+            correct += ((look_bool == target[:, :, 0]) & ((target[:, :, 0] == 0) | (predicted == target[:, :, 1]))).sum().item()
     return correct / total
 
 
@@ -57,14 +87,22 @@ def output_processing(output, names_list):
 def save_history(file_path, data):
     with open(file_path, 'wb') as f:
         pickle.dump(data, f)
-    print("file written")
+    print("History file written")
 
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Kiwi Training')
+    parser.add_argument('-s', '--structure', nargs='+', type=int, help='Structure of the model', required=True)
+    parser.add_argument('-e', '--epochs', type=int, default=100, help='number of epochs')
+    parser.add_argument('--state_dict', type=str, help="state directory file to load before training")
+
+    # parser.add_argument('-m', '--mode', default='cpu', type=str, help='gpu or cpu mode')
+
+    args = parser.parse_args()
+    print(args.structure)
+    suffix = utils.build_suffix(args.structure)
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    # Assuming that we are on a CUDA machine, this should print a CUDA device:
-    # print(device)
 
     dataset = FoADataset("data/labels", "data/inputs",
                          transform=transforms.Compose([
@@ -77,28 +115,32 @@ if __name__ == '__main__':
     train_length = int(len(dataset) * 0.8)
     lengths = [train_length, len(dataset) - train_length]
     train_set, test_set = torch.utils.data.random_split(dataset, lengths)
-    test_loader = DataLoader(test_set, batch_size=4,
-                             shuffle=False, num_workers=1)
-
     train_loader = DataLoader(train_set, batch_size=16,
                               shuffle=False, num_workers=8)
+    test_loader = DataLoader(test_set, batch_size=8,
+                             shuffle=False, num_workers=4)
 
-    net = Kiwi(config.nb_kids, [512, 512,1024,1024,1024])
-    # net.load_state_dict(torch.load("model/model.pt"))
+    model = Kiwi(config.nb_kids, args.structure)
+    if args.state_dict is not None:
+        model.load_state_dict(torch.load(args.state_dict))
 
-    # criterion = nn.MultiLabelMarginLoss()
-    optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
+    model_save_path = "model/model%s.pt" % suffix
+    history_save_path = "model/history%s.p" % suffix
+
+    optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
     loss_history = []
-    for epoch in range(200):  # loop over the dataset multiple times
+
+    print("Accuracy: %0.4f" % accuracy(model, test_loader))
+    for epoch in range(args.epochs):  # loop over the dataset multiple times
         running_loss = 0.0
         for i, data in enumerate(train_loader, 0):
             # get the inputs; data is a list of [inputs, labels]
-            inputs, target = data['inputs'], data['out']
-            # zero the parameter gradientse
+            inputs, target = data['inputs'], data['labels']
+            # zero the parameter gradients
             optimizer.zero_grad()
 
-            outputs = net(inputs)
-            loss = mean_cross_entropy_loss(outputs, target)
+            outputs = model(inputs)
+            loss = multi_entropy_loss(outputs, target)
             loss.backward()
             optimizer.step()
             running_loss += loss.item()
@@ -109,19 +151,14 @@ if __name__ == '__main__':
                 running_loss = 0.0
 
             loss_history.append((epoch, i, round(loss.item(), 3)))
-        torch.save(net.state_dict(), "model/model.512x2.1024x3.pt")
+        torch.save(model.state_dict(), model_save_path)
 
-        save_history("model/history.512x2.1024x3.pickle", loss_history)
+        save_history(history_save_path, loss_history)
         if epoch % 10 == 9:
-            print("Accuracy: %0.4f" % accuracy(net, test_loader))
+            print("Accuracy: %0.4f" % accuracy(model, test_loader))
 
     print('Finished Training')
 
 
-    parser = argparse.ArgumentParser(description='Kiwi Training')
 
-    parser.add_argument('-f', '--files', nargs='+',
-                        help='image files paths fed into network, single or multiple images')
-    parser.add_argument('-m', '--mode', default='cpu', type=str, help='gpu or cpu mode')
 
-    args = parser.parse_args()
