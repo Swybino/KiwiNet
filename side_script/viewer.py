@@ -69,9 +69,29 @@ class Viewer:
         cv2.line(self.img, (int(tdx), int(tdy)), (int(x2), int(y2)), (0, 255, 0), 2)
         cv2.line(self.img, (int(tdx), int(tdy)), (int(x3), int(y3)), (255, 56, 0), 2)
 
-    def plt_results(self, results):
-        pt1, pt2 = 0, 0
-        cv2.arrowedLine(self.img, pt1, pt2, (0, 0, 255), 5)
+    def plt_results(self, results, positions_list):
+        """
+
+        :param results:
+        :type results: dict
+        :param positions_list:
+        :type positions_list:
+        :return:
+        :rtype:
+        """
+        for key, value in results.items():
+            if value is None:
+                pt1 = positions_list[key]
+                pt1 = np.array([pt1[0] + 0.5 * pt1[2], pt1[1] + 0.5 * pt1[3]])
+                cv2.circle(self.img, pt1, 1, (0, 0, 255))
+            else:
+                pt1, pt2 = positions_list[key], positions_list[value]
+                pt1 = np.array([pt1[0] + 0.5*pt1[2], pt1[1] + 0.5*pt1[3]])
+                pt2 = np.array([pt2[0] + 0.5*pt2[2], pt2[1] + 0.5*pt2[3]])
+                v = pt2 - pt1
+                pt1, pt2 = pt1 + 0.1 * v, pt1 + 0.8 * v
+
+                cv2.arrowedLine(self.img, pt1, pt2, (0, 0, 255), 5)
 
     def show(self):
         cv2.imshow("img", self.img)

@@ -39,6 +39,7 @@ class FoADataset(Dataset):
             if idx >= len(label):
                 idx -= len(label)
             else:
+                print(label_idx, idx)
                 return label_idx, idx
 
     def __getitem__(self, idx):
