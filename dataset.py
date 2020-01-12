@@ -1,3 +1,4 @@
+import json
 import os
 import torch
 import pandas as pd
@@ -12,7 +13,7 @@ from random import random
 class FoADataset(Dataset):
     """Face Landmarks dataset."""
 
-    def __init__(self, csv_dir, root_dir, transform=None):
+    def __init__(self, csv_file, root_dir, transform=None):
         """
         Args:
             csv_file (string): Path to the csv file with annotations.
@@ -20,40 +21,30 @@ class FoADataset(Dataset):
             transform (callable, optional): Optional transform to be applied
                 on a sample.
         """
-        self.labels_list = []
-        for csv_file in os.listdir(csv_dir):
-            self.labels_list.append(pd.read_csv(os.path.join(csv_dir, csv_file)))
-
+        self.labels = pd.read_csv(csv_file)
         self.root_dir = root_dir
         self.transform = transform
-        self.data_processors = [DataProcessor(root_dir, csv_file[:-4]) for csv_file in os.listdir(csv_dir)]
 
     def __len__(self):
-        count = 0
-        for label in self.labels_list:
-            count += len(label)
-        return count
-
-    def get_index(self, idx):
-        for label_idx, label in enumerate(self.labels_list):
-            if idx >= len(label):
-                idx -= len(label)
-            else:
-                print(label_idx, idx)
-                return label_idx, idx
+        return len(self.labels)
 
     def __getitem__(self, idx):
 
         if torch.is_tensor(idx):
             idx = idx.tolist()
-        label_idx, item_idx = self.get_index(idx)
-        labels = self.labels_list[label_idx].iloc[item_idx]
+        labels = self.labels.iloc[idx]
         output = labels.to_dict()
+        video = output.pop("video", None)
         frame = int(output.pop("frame", None))
         inputs = []
-        for name in output.keys():
-            data = self.data_processors[label_idx].get_item(frame, name)
-            if data is not None:
+        file_path = os.path.join(self.root_dir, '%s_%s.json' %(video, frame))
+        with open(file_path, 'r') as f:
+            frame_data = json.load(f)
+
+        for key in output.keys():
+            name = config.kids_code[video][key]
+            if name in frame_data:
+                data = frame_data[name]
                 bbox = data[config.BBOX_KEY]
                 confidence = data[config.CONFIDENCE_KEY]
                 pose = [x * confidence for x in data[config.POSE_KEY]]

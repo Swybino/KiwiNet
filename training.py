@@ -119,24 +119,22 @@ if __name__ == '__main__':
     args = parser.parse_args()
     suffix = utils.build_suffix(args.structure)
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    dataset = FoADataset("data/labels", "data/inputs",
+    train_set = FoADataset("data/labels/train_dataset.csv", "data/inputs",
                          transform=transforms.Compose([
                              RandomPermutations(),
                              Binarization(size=6),
                              Normalization(),
                              ToTensor()
                          ]))
+    test_set = FoADataset("data/labels/test_dataset.csv", "data/inputs",
+                           transform=transforms.Compose([
+                               Binarization(size=6),
+                               Normalization(),
+                               ToTensor()
+                           ]))
 
-    train_length = int(len(dataset) * 0.8)
-    lengths = [train_length, len(dataset) - train_length]
-    train_set, test_set = torch.utils.data.random_split(dataset, lengths)
     train_loader = DataLoader(train_set, batch_size=16, shuffle=False, num_workers=8)
     test_loader = DataLoader(test_set, batch_size=8, shuffle=False, num_workers=4)
-
-    for i, data in train_loader:
-        print()
-    for i, data in test_loader:
-        print()
 
     model = Kiwi(config.nb_kids, args.structure)
     if args.state_dict is not None:
