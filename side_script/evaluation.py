@@ -1,11 +1,9 @@
 from side_script.data_processor import DataProcessor
-from side_script.viewer import Viewer
+from utils.viewer import Viewer
 import config
 import os
 import json
 import numpy as np
-from side_script.pose_estimator import solve_head_pose, face_orientation
-from side_script.pose_solver import PoseEstimator
 
 img_dir_path = "data/videos/171214_1"
 max_frame = 9900

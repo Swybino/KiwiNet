@@ -6,7 +6,6 @@ class LabelPreprocessor:
     def __init__(self, csv_file):
         self.labels = pd.read_csv(csv_file)
         self.labels = pd.DataFrame(self.labels)
-        # print(self.labels)
 
     def extend_data(self):
         df = pd.DataFrame(columns=self.labels.columns)

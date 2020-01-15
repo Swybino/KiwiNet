@@ -1,15 +1,18 @@
 import argparse
 import pickle
 
-import utils
-from dataset import FoADataset, RandomPermutations, Binarization, ToTensor, Normalization
-from kiwiNet import Kiwi
-from torchvision import transforms
 import torch
-import torch.optim as optim
 import torch.nn as nn
+import torch.optim as optim
+from torch.utils.data import DataLoader
+from torchvision import transforms
+import numpy as np
+
 import config
-from torch.utils.data import Dataset, DataLoader
+import utils.utils as utils
+from dataset import FoADataset, RandomPermutations, Binarization, ToTensor, Normalization, RandomDelete, RemoveExtra
+from kiwiNet import Kiwi
+from utils.confusion_matrix import ConfusionMatrix
 
 
 class MultiEntropyLoss:
@@ -23,6 +26,13 @@ class MultiEntropyLoss:
             self.ce_list.append(nn.CrossEntropyLoss(weight=w))
 
     def get_loss(self, output, target):
+        """
+        :param output: output of the network
+        :type output: torch.Tensor
+        :param target: target
+        :type target: torch.Tensor
+        :return:
+        """
         losses = []
         for i in range(output.size(1)):
             losses.append(self.ce_list[i](output[:, i, 1:], target[:, i, 1]))
@@ -31,75 +41,37 @@ class MultiEntropyLoss:
         # return loss
         return sum(losses)
 
-def multi_entropy_loss(output, target):
-    """
-    Compute the mean cross entropy of the
-    :param output: output of the network
-    :type output: torch.Tensor
-    :param target: target
-    :type target: torch.Tensor
-    :return:
-    :rtype:
-    """
-    bce = nn.BCELoss()
-    sigmoid = nn.Sigmoid()
-    losses = []
-    for i in range(output.size(1)):
-        w = torch.ones(output.size(1))
-        w[i] = 0.20
-        ce = nn.CrossEntropyLoss(weight=w)
-        losses.append(ce(output[:, i, 1:], target[:, i, 1]))
-        losses.append(bce(sigmoid(output[:, i, 0]), target[:, i, 0].type(torch.FloatTensor)))
-
-    # return loss
-    return sum(losses)
-
-
-def sum_cross_entropy_loss(output, target):
-    """
-    Compute the mean cross entropy of the
-    :param output: output of the network
-    :type output: torch.Tensor
-    :param target: target
-    :type target: torch.Tensor
-    :return:
-    :rtype:
-    """
-    criterion = nn.CrossEntropyLoss()
-    losses = []
-    for i in range(output.size(1)):
-        # print(output[:, i, :], target[:, i])
-        losses.append(criterion(output[:, i, :], target[:, i]))
-
-    loss = sum(losses)
-    # loss = torch.mean(torch.stack(losses))
-    return loss
-
 
 def accuracy(net, test_loader, visualize=False):
     correct = 0
     total = 0
     sigmoid = nn.Sigmoid()
+    cm = ConfusionMatrix()
     with torch.no_grad():
         for i, test_data in enumerate(test_loader):
             inputs, target = test_data['inputs'], test_data['labels']
             outputs = net(inputs)
+            print(test_data['results'])
+            cm.add_multi_results(test_data['results'], output_processing(outputs))
 
             look_bool = sigmoid(outputs.data[:, :, 0]) > 0.5
             _, predicted = torch.max(outputs.data[:, :, 1:], 2)
 
             total += target.size(0) * target.size(1)
-            correct += ((look_bool == target[:, :, 0]) & ((target[:, :, 0] == 0) | (predicted == target[:, :, 1]))).sum().item()
+            correct += ((look_bool == target[:, :, 0]) & (
+                        (target[:, :, 0] == 0) | (predicted == target[:, :, 1]))).sum().item()
+        print(cm)
     return correct / total
 
 
-def output_processing(output, names_list):
+def output_processing(output):
     result = {}
+    names_list = ["1", "2", "3", "4", "5", "6"]
     for idx, name in enumerate(names_list):
-        if output[idx,0] < 0:
+        if output[idx, 0] < 0:
             result[name] = 'z'
         else:
-            argmax = output[idx,1:].max(0)[1]
+            argmax = output[idx, 1:].max(0)[1]
             result[name] = 'z' if argmax == idx else names_list[argmax]
     return result
 
@@ -120,18 +92,21 @@ if __name__ == '__main__':
     suffix = utils.build_suffix(args.structure)
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     train_set = FoADataset("data/labels/train_dataset.csv", "data/inputs",
-                         transform=transforms.Compose([
-                             RandomPermutations(),
-                             Binarization(size=6),
-                             Normalization(),
-                             ToTensor()
-                         ]))
-    test_set = FoADataset("data/labels/test_dataset.csv", "data/inputs",
                            transform=transforms.Compose([
+                               RandomPermutations(),
+                               RandomDelete(),
                                Binarization(size=6),
                                Normalization(),
                                ToTensor()
                            ]))
+    test_set = FoADataset("data/labels/test_dataset.csv", "data/inputs",
+                          transform=transforms.Compose([
+                              Binarization(size=6),
+                              Normalization(),
+                              ToTensor()
+                          ]))
+    test_set_original = FoADataset("data/labels/test_dataset.csv", "data/inputs")
+
 
     train_loader = DataLoader(train_set, batch_size=16, shuffle=False, num_workers=8)
     test_loader = DataLoader(test_set, batch_size=8, shuffle=False, num_workers=4)
@@ -173,7 +148,3 @@ if __name__ == '__main__':
             print("Accuracy: %0.4f" % accuracy(model, test_loader))
 
     print('Finished Training')
-
-
-
-

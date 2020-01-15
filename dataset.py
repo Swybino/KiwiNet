@@ -1,13 +1,14 @@
 import json
 import os
-import torch
-import pandas as pd
-from torch.utils.data import Dataset, DataLoader
-from side_script.data_processor import DataProcessor
-import numpy as np
-import config
-from torchvision import transforms, utils
 from random import random
+
+import numpy as np
+import pandas as pd
+import torch
+from torch.utils.data import Dataset, DataLoader
+from torchvision import transforms
+
+import config
 
 
 class FoADataset(Dataset):
@@ -33,26 +34,28 @@ class FoADataset(Dataset):
         if torch.is_tensor(idx):
             idx = idx.tolist()
         labels = self.labels.iloc[idx]
-        output = labels.to_dict()
-        video = output.pop("video", None)
-        frame = int(output.pop("frame", None))
+        results = labels.to_dict()
+        video = results.pop("video", None)
+        frame = int(results.pop("frame", None))
         inputs = []
-        file_path = os.path.join(self.root_dir, '%s_%s.json' %(video, frame))
+        bboxes = {}
+        file_path = os.path.join(self.root_dir, '%s_%s.json' % (video, frame))
         with open(file_path, 'r') as f:
             frame_data = json.load(f)
 
-        for key in output.keys():
+        for key in results.keys():
             name = config.kids_code[video][key]
             if name in frame_data:
                 data = frame_data[name]
                 bbox = data[config.BBOX_KEY]
+                bboxes[key] = bbox
                 confidence = data[config.CONFIDENCE_KEY]
                 pose = [x * confidence for x in data[config.POSE_KEY]]
                 inputs.append(bbox + pose)
             else:
                 inputs.append([0 for _ in range(7)])
         inputs = np.array(inputs)
-        sample = {"inputs": inputs, "result": output, "frame": frame}
+        sample = {"inputs": inputs, "results": results, "frame": frame, "bboxes": bboxes}
 
         if self.transform:
             sample = self.transform(sample)
@@ -68,13 +71,12 @@ class RandomPermutations(object):
         return
 
     def __call__(self, sample):
-        out = sample["result"]
+        out = sample["results"]
         keys = list(out.keys())
         idxs = np.array([idx for idx in range(len(keys))])
         np.random.shuffle(idxs)
         sample["inputs"] = np.array([sample["inputs"][i] for i in idxs])
-        sample["result"] = {keys[i]: out[keys[i]] for i in idxs}
-
+        sample["results"] = {keys[i]: out[keys[i]] for i in idxs}
         return sample
 
 
@@ -88,10 +90,10 @@ class RandomDelete(object):
 
     def __call__(self, sample):
         proba = 0.1
-        keys = list(sample["result"].keys())
+        keys = list(sample["results"].keys())
         for idx in range(len(keys)):
             if random() > 1 - proba:
-                sample["result"][keys[idx]] = "z"
+                sample["results"][keys[idx]] = "z"
                 sample["inputs"][idx][-3:] *= 0
                 return sample
         return sample
@@ -102,7 +104,7 @@ class Binarization(object):
         self.size = size
 
     def __call__(self, sample):
-        result_data = sample["result"]
+        result_data = sample["results"]
         keys = list(result_data.keys())
         out_data = []
         for idx, k in enumerate(keys):
@@ -111,8 +113,8 @@ class Binarization(object):
             else:
                 out_data.append([0, idx])
         sample['labels'] = np.array(out_data)
-        # return sample
-        return {"inputs": sample["inputs"], 'labels': np.array(out_data)}
+        return sample
+        # return {"inputs": sample["inputs"], 'labels': np.array(out_data)}
 
 
 class Normalization(object):
@@ -134,9 +136,12 @@ class ToTensor(object):
         inputs, output = sample["inputs"], sample['labels']
         sample["inputs"] = torch.from_numpy(inputs).type(torch.FloatTensor)
         sample['labels'] = torch.from_numpy(output).type(torch.LongTensor)
-        # sample['inputs'] = sample['inputs']
-        # sample['labels'] = sample['labels']
         return sample
+
+
+class RemoveExtra(object):
+    def __call__(self, sample):
+        return {"inputs": sample["inputs"], 'labels': sample['labels']}
 
 
 if __name__ == "__main__":
