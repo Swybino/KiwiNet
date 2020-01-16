@@ -52,8 +52,10 @@ class FoADataset(Dataset):
                 confidence = data[config.CONFIDENCE_KEY]
                 pose = [x * confidence for x in data[config.POSE_KEY]]
                 inputs.append(bbox + pose)
+
             else:
                 inputs.append([0 for _ in range(7)])
+                bboxes[key] = [0, 0, 0, 0]
         inputs = np.array(inputs)
         sample = {"inputs": inputs, "results": results, "frame": frame, "bboxes": bboxes}
 
@@ -145,13 +147,18 @@ class RemoveExtra(object):
 
 
 if __name__ == "__main__":
-    dataset = FoADataset("data/labels", "data/inputs", transform=transforms.Compose(
-        [RandomDelete(), RandomPermutations(), Binarization(size=6), Normalization(img_size=640), ToTensor()]))
+    dataset = FoADataset("data/labels/test_dataset.csv", "data/inputs")
 
-    dataloader = DataLoader(dataset, batch_size=1,
-                            shuffle=True, num_workers=1)
+    dataloader = DataLoader(dataset, batch_size=6,
+                            shuffle=False, num_workers=6)
 
-    for i_batch, sample_batched in enumerate(dataloader):
-        print(i_batch, sample_batched, "##########",
-              sep="\n")
-        break
+    z_count = 0
+    total_count = 0
+    for i_batch, sample in enumerate(dataloader):
+        # for idx, sample in enumerate(dataset):
+
+        for key, data in sample['results'].items():
+            z_count += data.count('z')
+            total_count += len(data)
+
+    print(z_count, total_count, z_count / total_count)

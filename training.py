@@ -42,7 +42,7 @@ class MultiEntropyLoss:
         return sum(losses)
 
 
-def accuracy(net, test_loader, visualize=False):
+def accuracy(net, test_loader, *, confusion_matrix=True, visualize=False):
     correct = 0
     total = 0
     sigmoid = nn.Sigmoid()
@@ -51,28 +51,29 @@ def accuracy(net, test_loader, visualize=False):
         for i, test_data in enumerate(test_loader):
             inputs, target = test_data['inputs'], test_data['labels']
             outputs = net(inputs)
-            print(test_data['results'])
-            cm.add_multi_results(test_data['results'], output_processing(outputs))
-
+            if confusion_matrix:
+                cm.add_result(test_data['results'], output_processing(outputs))
             look_bool = sigmoid(outputs.data[:, :, 0]) > 0.5
             _, predicted = torch.max(outputs.data[:, :, 1:], 2)
 
             total += target.size(0) * target.size(1)
             correct += ((look_bool == target[:, :, 0]) & (
-                        (target[:, :, 0] == 0) | (predicted == target[:, :, 1]))).sum().item()
-        print(cm)
-    return correct / total
+                    (target[:, :, 0] == 0) | (predicted == target[:, :, 1]))).sum().item()
+    cm.normalize()
+    print("Accuracy: %0.4f" % (correct / total), cm, sep="\n")
+    return correct / total, cm
 
 
 def output_processing(output):
-    result = {}
     names_list = ["1", "2", "3", "4", "5", "6"]
+    result = {k: [] for k in names_list}
     for idx, name in enumerate(names_list):
-        if output[idx, 0] < 0:
-            result[name] = 'z'
-        else:
-            argmax = output[idx, 1:].max(0)[1]
-            result[name] = 'z' if argmax == idx else names_list[argmax]
+        for j in range(output.size(0)):
+            if output[j, idx, 0] < 0:
+                result[name].append('z')
+            else:
+                argmax = output[j, idx, 1:].max(0)[1]
+                result[name].append('z' if argmax == idx else names_list[argmax])
     return result
 
 
@@ -107,7 +108,6 @@ if __name__ == '__main__':
                           ]))
     test_set_original = FoADataset("data/labels/test_dataset.csv", "data/inputs")
 
-
     train_loader = DataLoader(train_set, batch_size=16, shuffle=False, num_workers=8)
     test_loader = DataLoader(test_set, batch_size=8, shuffle=False, num_workers=4)
 
@@ -122,7 +122,7 @@ if __name__ == '__main__':
     optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
     loss_history = []
 
-    print("Accuracy: %0.4f" % accuracy(model, test_loader))
+    accuracy(model, test_loader)
     for epoch in range(args.epochs):  # loop over the dataset multiple times
         running_loss = 0.0
         for i, data in enumerate(train_loader, 0):
@@ -145,6 +145,6 @@ if __name__ == '__main__':
         torch.save(model.state_dict(), model_save_path)
         save_history(history_save_path, loss_history)
         if epoch % 10 == 9:
-            print("Accuracy: %0.4f" % accuracy(model, test_loader))
+            accuracy(model, test_loader)
 
     print('Finished Training')

@@ -11,13 +11,15 @@ class ConfusionMatrix:
             self.add_result(target[idx], output[idx])
 
     def add_result(self, target, output):
-        for idx, name in enumerate(self.names_list):
-            print(self.mat)
-            print(target,output)
-            self.mat[self.names_list.index(target[name]), self.names_list.index(output[name])] += 1
+        for name, result in target.items():
+            for idx, v in enumerate(result):
+                self.mat[self.names_list.index(v), self.names_list.index(output[name][idx])] += 1
 
     def normalize(self):
         self.mat = self.mat / self.mat.sum(1)[:, np.newaxis]
+        self.mat *= 100
+        self.mat = self.mat.round(1)
 
     def __str__(self):
-        print(self.mat)
+        np.set_printoptions(suppress=True)
+        return str(self.mat)
