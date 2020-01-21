@@ -34,30 +34,44 @@ class FoADataset(Dataset):
         if torch.is_tensor(idx):
             idx = idx.tolist()
         labels = self.labels.iloc[idx]
-        results = labels.to_dict()
-        video = results.pop("video", None)
-        frame = int(results.pop("frame", None))
-        inputs = []
-        bboxes = {}
-        file_path = os.path.join(self.root_dir, '%s_%s.json' % (video, frame))
+
+        # print(labels["video"],labels["frame"])
+        file_path = os.path.join(self.root_dir, '%s_%s.json' % (labels["video"], labels["frame"]))
+
         with open(file_path, 'r') as f:
             frame_data = json.load(f)
-
-        for key in results.keys():
-            name = config.kids_code[video][key]
-            if name in frame_data:
-                data = frame_data[name]
-                bbox = data[config.BBOX_KEY]
-                bboxes[key] = bbox
-                confidence = data[config.CONFIDENCE_KEY]
-                pose = [x * confidence for x in data[config.POSE_KEY]]
-                inputs.append(bbox + pose)
-
+        name_list = []
+        bboxes = []
+        pose = [0, 0, 0]
+        main_pos = [0, 0]
+        for key, item in frame_data.items():
+            if key == labels["name"]:
+                bbox = item[config.BBOX_KEY]
+                main_pos = [bbox[0] + 0.5 * bbox[2], bbox[1] + 0.5 * bbox[3]]
+                confidence = item[config.CONFIDENCE_KEY]
+                pose = [x * confidence for x in item[config.POSE_KEY]]
+                name_list.insert(0, key)
             else:
-                inputs.append([0 for _ in range(7)])
-                bboxes[key] = [0, 0, 0, 0]
-        inputs = np.array(inputs)
-        sample = {"inputs": inputs, "results": results, "frame": frame, "bboxes": bboxes}
+                bbox = item[config.BBOX_KEY]
+                bboxes.append(bbox[0] + 0.5 * bbox[2])
+                bboxes.append(bbox[1] + 0.5 * bbox[3])
+                name_list.append(key)
+        if len(bboxes) < 10:
+            for i in range(10 - len(bboxes)):
+                bboxes.append(0)
+        if len(name_list) < 6:
+            for i in range(6 - len(name_list)):
+                name_list.append("z")
+
+        inputs = np.array(pose + main_pos + bboxes)
+
+        if labels["target"] in name_list:
+            label = name_list.index(labels["target"])
+        else:
+            label = 0
+
+        sample = {"inputs": inputs, "labels": label, "frame": labels["frame"], "name_label": labels["target"],
+                  "names_list": name_list}
 
         if self.transform:
             sample = self.transform(sample)
@@ -82,41 +96,16 @@ class RandomPermutations(object):
         return sample
 
 
-class RandomDelete(object):
+class RandomTranslation(object):
     """
 
     """
 
-    def __init__(self):
+    def __init__(self, img_size=640):
+        self.img_size = img_size
+
+    def __call__(self, sample):
         return
-
-    def __call__(self, sample):
-        proba = 0.1
-        keys = list(sample["results"].keys())
-        for idx in range(len(keys)):
-            if random() > 1 - proba:
-                sample["results"][keys[idx]] = "z"
-                sample["inputs"][idx][-3:] *= 0
-                return sample
-        return sample
-
-
-class Binarization(object):
-    def __init__(self, size):
-        self.size = size
-
-    def __call__(self, sample):
-        result_data = sample["results"]
-        keys = list(result_data.keys())
-        out_data = []
-        for idx, k in enumerate(keys):
-            if result_data[k] in keys:
-                out_data.append([1, keys.index(result_data[k])])
-            else:
-                out_data.append([0, idx])
-        sample['labels'] = np.array(out_data)
-        return sample
-        # return {"inputs": sample["inputs"], 'labels': np.array(out_data)}
 
 
 class Normalization(object):
@@ -125,8 +114,8 @@ class Normalization(object):
 
     def __call__(self, sample):
         inputs = sample["inputs"]
-        inputs[:, -3:] = (inputs[:, -3:] + 180) / 360
-        inputs[:, :-3] = inputs[:, :-3] / self.img_size
+        inputs[:3] = (inputs[:3]) / 360
+        inputs[3:] = inputs[3:] / self.img_size
         sample["inputs"] = inputs
         return sample
 
@@ -137,28 +126,24 @@ class ToTensor(object):
     def __call__(self, sample):
         inputs, output = sample["inputs"], sample['labels']
         sample["inputs"] = torch.from_numpy(inputs).type(torch.FloatTensor)
-        sample['labels'] = torch.from_numpy(output).type(torch.LongTensor)
         return sample
 
 
-class RemoveExtra(object):
-    def __call__(self, sample):
-        return {"inputs": sample["inputs"], 'labels': sample['labels']}
-
-
 if __name__ == "__main__":
-    dataset = FoADataset("data/labels/test_dataset.csv", "data/inputs")
+    # dataset = FoADataset("data/labels/test_dataset_i.csv", "data/inputs",
+    #                      transform=transforms.Compose([Normalization(), ToTensor()]))
 
-    dataloader = DataLoader(dataset, batch_size=6,
-                            shuffle=False, num_workers=6)
+    dataset = FoADataset("data/labels/train_dataset_patch.csv", "data/inputs",
+                         transform=transforms.Compose([Normalization(), ToTensor()]))
 
-    z_count = 0
-    total_count = 0
+    dataloader = DataLoader(dataset, batch_size=4,
+                            shuffle=True, num_workers=4)
+
+    total = 0
+    count = 0
     for i_batch, sample in enumerate(dataloader):
-        # for idx, sample in enumerate(dataset):
-
-        for key, data in sample['results'].items():
-            z_count += data.count('z')
-            total_count += len(data)
-
-    print(z_count, total_count, z_count / total_count)
+        for l in sample["name_label"]:
+            if l == "z":
+                count += 1
+            total += 1
+    print(count/total)

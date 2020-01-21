@@ -11,7 +11,7 @@ class LabelPreprocessor:
         df = pd.DataFrame(columns=self.labels.columns)
         last_row = None
         for index, row in self.labels.iterrows():
-            if last_row is not None and np.array_equal(np.array(last_row)[1:], np.array(row)[1:]):
+            if last_row is not None and np.array_equal(np.array(last_row)[2:], np.array(row)[2:]):
                 for i in range(int(last_row["frame"]) + 1, int(row["frame"])):
                     last_row["frame"] = i
                     df = df.append(last_row)
@@ -19,10 +19,10 @@ class LabelPreprocessor:
             last_row = row
             # row_next = self.labels.iloc[index+1]
 
-        df.to_csv("data/labels/171214_2.csv", index=False)
+        df.to_csv("data/labels/individual_dataset_ext.csv", index=False)
         return
 
 
 if __name__ == "__main__":
-    lp = LabelPreprocessor("data/labels/171214_2_original.csv")
+    lp = LabelPreprocessor("data/labels/individual_dataset.csv")
     lp.extend_data()

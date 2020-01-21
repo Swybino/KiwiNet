@@ -1,25 +1,32 @@
 import numpy as np
+import pandas as pd
 
 
 class ConfusionMatrix:
     def __init__(self):
-        self.names_list = ["1", "2", "3", "4", "5", "6", "z"]
+        self.names_list = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "z"]
         self.mat = np.zeros((len(self.names_list), len(self.names_list)))
+        zeros = np.zeros((len(self.names_list), len(self.names_list)))
+        self.matrix = pd.DataFrame(zeros, index=self.names_list, columns=self.names_list, dtype=float)
 
-    def add_multi_results(self, target, output):
-        for idx in range(target.size(0)):
-            self.add_result(target[idx], output[idx])
-
-    def add_result(self, target, output):
-        for name, result in target.items():
-            for idx, v in enumerate(result):
-                self.mat[self.names_list.index(v), self.names_list.index(output[name][idx])] += 1
+    def add_results(self, target, output):
+        for idx, v in enumerate(target):
+            self.matrix[output[idx]][v] += 1
 
     def normalize(self):
-        self.mat = self.mat / self.mat.sum(1)[:, np.newaxis]
-        self.mat *= 100
-        self.mat = self.mat.round(1)
+        for i in self.names_list:
+            t = 0
+            for j in self.names_list:
+                t += self.matrix[j][i]
+
+            for j in self.names_list:
+                self.matrix[j][i] = round(self.matrix[j][i]/max(t,1), 3)
 
     def __str__(self):
-        np.set_printoptions(suppress=True)
-        return str(self.mat)
+        return str(self.matrix)
+
+
+if __name__ == "__main__":
+    mat = ConfusionMatrix()
+    mat.add_results(["a","b","c","z"], ["a","z","e","z"])
+    print(mat)

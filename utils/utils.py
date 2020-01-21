@@ -31,13 +31,16 @@ def build_suffix(param_list):
     for idx, value in enumerate(param_list):
         if value == last_value:
             count += 1
-            last_value = "%sx%d" %(last_value, count)
         else:
+            if len(str(last_value)) > 0:
+                string_char += "." + (str(last_value) if count == 1 else "%sx%d" %(last_value, count))
             count = 1
-            string_char += "." + str(last_value)
             last_value = value
-    string_char += "." + str(last_value)
-    return string_char[1:]
+    string_char += "." + (str(last_value) if count == 1 else "%sx%d" %(last_value, count))
+
+    return string_char
 
 
+if __name__ == "__main__":
+    print(build_suffix([512, 512, 512, 1024, 1024]))
 
