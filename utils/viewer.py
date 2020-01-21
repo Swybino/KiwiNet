@@ -3,11 +3,15 @@ import numpy as np
 from math import cos, sin
 
 LANDMARK_COLOR = (255, 255, 255)
-SCALING = 1.5
+SCALING = 1
+
 
 class Viewer:
-    def __init__(self, img_path):
-        self.img = cv2.imread(img_path)
+    def __init__(self, img):
+        if type(img) == str:
+            self.img = cv2.imread(img)
+        else:
+            self.img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         self.img = cv2.resize(self.img, (int(self.img.shape[0] * SCALING), int(self.img.shape[1] *SCALING)))
         return
 
@@ -69,29 +73,16 @@ class Viewer:
         cv2.line(self.img, (int(tdx), int(tdy)), (int(x2), int(y2)), (0, 255, 0), 2)
         cv2.line(self.img, (int(tdx), int(tdy)), (int(x3), int(y3)), (255, 56, 0), 2)
 
-    def plt_results(self, results, positions_list):
-        """
-
-        :param results:
-        :type results: dict
-        :param positions_list:
-        :type positions_list:
-        :return:
-        :rtype:
-        """
-        for key, value in results.items():
-            if value is None:
-                pt1 = positions_list[key]
-                pt1 = np.array([pt1[0] + 0.5 * pt1[2], pt1[1] + 0.5 * pt1[3]])
-                cv2.circle(self.img, pt1, 1, (0, 0, 255))
-            else:
-                pt1, pt2 = positions_list[key], positions_list[value]
-                pt1 = np.array([pt1[0] + 0.5*pt1[2], pt1[1] + 0.5*pt1[3]])
-                pt2 = np.array([pt2[0] + 0.5*pt2[2], pt2[1] + 0.5*pt2[3]])
-                v = pt2 - pt1
-                pt1, pt2 = pt1 + 0.1 * v, pt1 + 0.8 * v
-
-                cv2.arrowedLine(self.img, pt1, pt2, (0, 0, 255), 5)
+    def plt_results(self, origin, focus):
+        if np.array_equal(origin, focus):
+            pt1 = tuple(([int(i) for i in origin]))
+            cv2.circle(self.img, pt1, 2, (0, 0, 255))
+        else:
+            pt1, pt2 = np.array(origin), np.array(focus)
+            v = pt2 - pt1
+            pt1, pt2 = pt1 + 0.1 * v, pt1 + 0.8 * v
+            pt1, pt2 = tuple([int(i) for i in pt1]), tuple([int(i) for i in pt2])
+            cv2.arrowedLine(self.img, pt1, pt2, (0, 0, 255), 5)
 
     def show(self):
         cv2.imshow("img", self.img)

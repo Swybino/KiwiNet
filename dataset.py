@@ -64,14 +64,13 @@ class FoADataset(Dataset):
                 name_list.append("z")
 
         inputs = np.array(pose + main_pos + bboxes)
-
         if labels["target"] in name_list:
             label = name_list.index(labels["target"])
         else:
             label = 0
 
         sample = {"inputs": inputs, "labels": label, "frame": labels["frame"], "name_label": labels["target"],
-                  "names_list": name_list}
+                  "names_list": name_list, "video": labels["video"], "positions": torch.Tensor(main_pos + bboxes)}
 
         if self.transform:
             sample = self.transform(sample)
@@ -133,7 +132,7 @@ if __name__ == "__main__":
     # dataset = FoADataset("data/labels/test_dataset_i.csv", "data/inputs",
     #                      transform=transforms.Compose([Normalization(), ToTensor()]))
 
-    dataset = FoADataset("data/labels/train_dataset_patch.csv", "data/inputs",
+    dataset = FoADataset("data/labels/test_labels_patches.csv", "data/inputs",
                          transform=transforms.Compose([Normalization(), ToTensor()]))
 
     dataloader = DataLoader(dataset, batch_size=4,
@@ -142,8 +141,10 @@ if __name__ == "__main__":
     total = 0
     count = 0
     for i_batch, sample in enumerate(dataloader):
-        for l in sample["name_label"]:
-            if l == "z":
-                count += 1
-            total += 1
+        print(sample)
+        break
+        # for l in sample["name_label"]:
+        #     if l == "z":
+        #         count += 1
+        #     total += 1
     print(count/total)

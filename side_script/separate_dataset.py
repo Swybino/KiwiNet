@@ -1,9 +1,9 @@
 import pandas as pd
 import numpy.random as rdm
 
-df = pd.read_csv("data/labels/individual_dataset_ext.csv")
+df = pd.read_csv("data/labels/labels.csv")
 
-patch_size = 10
+patch_size = 20
 sep_factor = 0.8
 df_copy = df.copy()
 
@@ -17,5 +17,5 @@ t2.drop_duplicates()
 
 train = df_copy.drop(t2.index)
 print(len(t2), len(train), len(df))
-train.to_csv(r'data/labels/train_dataset_rdm.csv', index=False)
-t2.to_csv(r'data/labels/test_dataset_rdm.csv', index=False)
+train.to_csv(r'data/labels/train_labels_patches.csv', index=False)
+t2.to_csv(r'data/labels/test_labels_patches.csv', index=False)

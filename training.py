@@ -1,46 +1,19 @@
 import argparse
 import pickle
 from datetime import date
-
 import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
 from torchvision import transforms
-
 import config
 import utils.utils as utils
 from dataset import FoADataset, ToTensor, Normalization
 from kiwiNet import Kiwi
 from utils.confusion_matrix import ConfusionMatrix
-
-
-class MultiEntropyLoss:
-    def __init__(self, size=6, weight=0.2):
-        self.bce = nn.BCELoss()
-        self.sigmoid = nn.Sigmoid()
-        self.ce_list = []
-        for i in range(size):
-            w = torch.ones(size)
-            w[i] = weight
-            self.ce_list.append(nn.CrossEntropyLoss(weight=w))
-
-    def get_loss(self, output, target):
-        """
-        :param output: output of the network
-        :type output: torch.Tensor
-        :param target: target
-        :type target: torch.Tensor
-        :return:
-        """
-        losses = []
-        for i in range(output.size(1)):
-            losses.append(self.ce_list[i](output[:, i, 1:], target[:, i, 1]))
-            losses.append(self.bce(self.sigmoid(output[:, i, 0]), target[:, i, 0].type(torch.FloatTensor)))
-
-        # return loss
-        return sum(losses)
-
+from utils.video import Video
+from utils.viewer import Viewer
+import os
 
 def accuracy(net, test_loader, *, confusion_matrix=True, visualize=False):
     correct = 0
@@ -52,17 +25,31 @@ def accuracy(net, test_loader, *, confusion_matrix=True, visualize=False):
             inputs, labels = test_data['inputs'], test_data['labels']
             # print(inputs, labels)
             outputs = net(inputs)
-            if confusion_matrix:
-                name_output = output_processing(outputs, test_data['names_list'])
-                cm.add_results(test_data['name_label'], name_output)
             _, predicted = torch.max(outputs.data, 1)
+
+            # display_results(test_data, predicted)
+            names_outputs = output_processing(outputs, test_data['names_list'])
+            if confusion_matrix:
+                cm.add_results(test_data['name_label'], names_outputs)
 
             total += labels.size(0)
             correct += (predicted == labels).sum().item()
+    model.train()
     cm.normalize()
     print("Accuracy: %0.4f" % (correct / total), total, correct, cm,  sep="\n")
     return correct / total, cm
 
+
+def display_results(data, predicted):
+    print(predicted)
+    for i in range(predicted.size(0)):
+        video_path = os.path.join(config.video_root, "%s.MP4" %data["video"][i])
+        v = Viewer(Video(video_path)[data["frame"][i]])
+        print("######", data["name_label"][i])
+        kid, focus = data["positions"][i][0:2], data["positions"][i][2*predicted[i]:2+2*predicted[i]]
+        v.plt_results(kid, focus)
+        v.show()
+    return
 
 def output_processing(outputs, names_list):
     r = []
@@ -86,9 +73,11 @@ if __name__ == '__main__':
     parser.add_argument('-s', '--structure', nargs='+', type=int, help='Structure of the model', required=True)
     parser.add_argument('-e', '--epochs', type=int, default=100, help='number of epochs')
     parser.add_argument('-r', '--learning_rate', type=float, default=0.001, help='initial learning rate')
-    parser.add_argument('-l','--load_state', type=str, help="state directory file to load before training")
+    parser.add_argument('-l', '--load_state', type=str, help="state directory file to load before training")
     parser.add_argument('--train_set', type=str, help="train set location")
     parser.add_argument('--test_set', type=str, help="test set location")
+    parser.add_argument('--print_rate', type=int, default=200, help='print every * mini epochs')
+    parser.add_argument('--accuracy_rate', type=int, default=10, help='tests accuracy every * epochs')
 
     args = parser.parse_args()
     suffix = utils.build_suffix(args.structure)
@@ -97,17 +86,18 @@ if __name__ == '__main__':
     if args.train_set is not None:
         train_set_file = args.train_set
     else:
-        train_set_file = "data/labels/train_dataset_patch.csv"
+        train_set_file = "data/labels/train_labels_patches.csv"
 
     train_set = FoADataset(train_set_file, "data/inputs",
                            transform=transforms.Compose([
                                Normalization(),
                                ToTensor()
                            ]))
+
     if args.test_set is not None:
         test_set_file = args.test_set
     else:
-        test_set_file = "data/labels/test_dataset_patch.csv"
+        test_set_file = "data/labels/test_labels_patches.csv"
 
     test_set = FoADataset(test_set_file, "data/inputs",
                            transform=transforms.Compose([
@@ -116,7 +106,7 @@ if __name__ == '__main__':
                            ]))
 
     train_loader = DataLoader(train_set, batch_size=24, shuffle=True, num_workers=8)
-    test_loader = DataLoader(test_set, batch_size=16, shuffle=False, num_workers=4)
+    test_loader = DataLoader(test_set, batch_size=2, shuffle=True, num_workers=4)
 
     model = Kiwi(config.nb_kids, args.structure)
     if args.load_state is not None:
@@ -145,15 +135,14 @@ if __name__ == '__main__':
             optimizer.step()
             running_loss += loss.item()
 
-            if i % 200 == 199:
-                print('[%d, %5d] loss: %.3f' %
-                      (epoch + 1, i + 1, running_loss / 20))
+            if i % args.print_rate == args.print_rate-1:
+                print('[%d, %5d] loss: %.3f' % (epoch + 1, i + 1, running_loss / args.print_rate))
                 running_loss = 0.0
 
             loss_history.append((epoch, i, round(loss.item(), 3)))
         torch.save(model.state_dict(), model_save_path)
         save_history(history_save_path, loss_history)
-        if epoch % 5 == 4:
+        if epoch % args.accuracy_rate == args.accuracy_rate:
             accuracy(model, test_loader)
 
     print('Finished Training')

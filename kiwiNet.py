@@ -3,6 +3,7 @@ import torch.nn as nn
 
 batch_size = 10
 
+
 class Kiwi(nn.Module):
     def __init__(self, kids_nb, param_list):
         super(Kiwi, self).__init__()
