@@ -104,6 +104,8 @@ class RandomTranslation(object):
         self.img_size = img_size
 
     def __call__(self, sample):
+        inputs = sample["inputs"]
+
         return
 
 

@@ -15,12 +15,14 @@ from utils.video import Video
 from utils.viewer import Viewer
 import os
 
+
 def accuracy(net, test_loader, *, confusion_matrix=True, visualize=False):
     correct = 0
     total = 0
     cm = ConfusionMatrix()
     model.eval()
     with torch.no_grad():
+
         for i, test_data in enumerate(test_loader):
             inputs, labels = test_data['inputs'], test_data['labels']
             # print(inputs, labels)
@@ -29,6 +31,7 @@ def accuracy(net, test_loader, *, confusion_matrix=True, visualize=False):
 
             # display_results(test_data, predicted)
             names_outputs = output_processing(outputs, test_data['names_list'])
+
             if confusion_matrix:
                 cm.add_results(test_data['name_label'], names_outputs)
 
@@ -38,6 +41,13 @@ def accuracy(net, test_loader, *, confusion_matrix=True, visualize=False):
     cm.normalize()
     print("Accuracy: %0.4f" % (correct / total), total, correct, cm,  sep="\n")
     return correct / total, cm
+
+
+def save_results(data, frame):
+    with open("", 'wb') as f:
+        pickle.dump(data, f)
+    print("History file written")
+    return
 
 
 def display_results(data, predicted):
@@ -86,7 +96,7 @@ if __name__ == '__main__':
     if args.train_set is not None:
         train_set_file = args.train_set
     else:
-        train_set_file = "data/labels/train_labels_patches.csv"
+        train_set_file = "data/labels/train_labels_frame_patches.csv"
 
     train_set = FoADataset(train_set_file, "data/inputs",
                            transform=transforms.Compose([
@@ -97,7 +107,7 @@ if __name__ == '__main__':
     if args.test_set is not None:
         test_set_file = args.test_set
     else:
-        test_set_file = "data/labels/test_labels_patches.csv"
+        test_set_file = "data/labels/test_labels_frame_patches.csv"
 
     test_set = FoADataset(test_set_file, "data/inputs",
                            transform=transforms.Compose([
@@ -105,7 +115,7 @@ if __name__ == '__main__':
                                ToTensor()
                            ]))
 
-    train_loader = DataLoader(train_set, batch_size=24, shuffle=True, num_workers=8)
+    train_loader = DataLoader(train_set, batch_size=48, shuffle=True, num_workers=8)
     test_loader = DataLoader(test_set, batch_size=2, shuffle=True, num_workers=4)
 
     model = Kiwi(config.nb_kids, args.structure)
@@ -142,7 +152,7 @@ if __name__ == '__main__':
             loss_history.append((epoch, i, round(loss.item(), 3)))
         torch.save(model.state_dict(), model_save_path)
         save_history(history_save_path, loss_history)
-        if epoch % args.accuracy_rate == args.accuracy_rate:
+        if epoch % args.accuracy_rate == args.accuracy_rate-1:
             accuracy(model, test_loader)
 
     print('Finished Training')

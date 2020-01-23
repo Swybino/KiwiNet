@@ -3,7 +3,7 @@ import numpy as np
 import pickle
 
 
-history = pickle.load(open("model/history.256x2.p", "rb"))
+history = pickle.load(open("model/history.512x3.1024x2_2020-01-21.p", "rb"))
 
 y = [i[2] for i in history]
 epochs = [i[0] for i in history]
@@ -15,7 +15,7 @@ for i in range(1, epochs[-1]):
 mean_x = [i for i in range(1, epochs[-1])]
 
 plt.title("")
-plt.plot(x, y, 'r.', mean_x, mean_y, 'b-')
+plt.plot(mean_x, mean_y, 'b-')
 plt.ylabel('Loss')
 plt.xlabel('Epoch')
 plt.show()
