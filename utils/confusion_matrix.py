@@ -4,7 +4,7 @@ import pandas as pd
 
 class ConfusionMatrix:
     def __init__(self):
-        self.names_list = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "z"]
+        self.names_list = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "z"]
         self.mat = np.zeros((len(self.names_list), len(self.names_list)))
         zeros = np.zeros((len(self.names_list), len(self.names_list)))
         self.matrix = pd.DataFrame(zeros, index=self.names_list, columns=self.names_list, dtype=float)

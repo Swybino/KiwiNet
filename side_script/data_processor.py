@@ -1,7 +1,7 @@
 import json
 import math
 import config
-import utils
+from utils import utils
 import os
 from side_script.pose_estimator import solve_head_pose
 import numpy as np
@@ -12,7 +12,7 @@ class DataProcessor:
     def __init__(self, root_dir, video_title):
         self.root_dir = root_dir
         self.video_title = video_title
-        self.data_length = 8000
+        self.data_length = len(os.listdir(root_dir))
         self.frame_idx = None
         self.frame_data = None
         self.max_yaw = 90
@@ -52,6 +52,8 @@ class DataProcessor:
     def get_frame_data(self):
         assert type(self.frame_idx) is int, "frame index is not Integer"
         path = os.path.join(self.root_dir, "%s_%d.json" % (self.video_title, self.frame_idx))
+        if not os.path.exists(path):
+            path = os.path.join(self.root_dir, "%s_%d.txt" % (self.video_title, self.frame_idx))
         self.frame_data = self.import_data(path)
 
     def import_data(self, file_path):
@@ -188,31 +190,16 @@ class DataProcessor:
 
 
 if __name__ == "__main__":
+    intake = "data/171218_1_1/data"
+    video_name = "171218_1_1"
+    out = "data/171218_1_1/processed_data"
 
-    # dp = DataProcessor("data\\171214_2\\original", "171214_2")
-    # dp.data_initialization("data/171214_2/correction_size")
-
-    dp = DataProcessor("data/171214_2/correction_size", "171214_2")
-    dp.do_all(dp.compare_sizes, "data/171214_2/correction_size")
-    dp = DataProcessor("data/171214_2/correction_size", "171214_2")
+    dp = DataProcessor(intake, video_name)
+    dp.do_all(dp.compare_sizes, out)
+    dp = DataProcessor(out, video_name)
     dp.set_max_angles(100, 55)
-    dp.do_all(dp.detect_high_angles, "data/171214_2/correction_angle")
-    print("OK")
+    dp.do_all(dp.detect_high_angles, out)
+    print(dp.percentage_blank())
+    print("----OK----")
 
     # print(dp.percentage_blank())
-
-    # dp = DataProcessor("data/171214_1/correction_size", "171214_1")
-    # dp.do_all(dp.detect_high_angles, "data/171214_1/correction_angle")
-
-    # dp = DataProcessor("data/171214_1/correction_size", "171214_1")
-    # dp.set_max_angles(100, 45)
-    # dp.do_all(dp.detect_high_angles, "data/171214_1/correction_angle_100_45")
-    # dp.set_max_angles(100, 50)
-    # dp.do_all(dp.detect_high_angles, "data/171214_1/correction_angle_100_50")
-    # dp.set_max_angles(100, 55)
-    # dp.do_all(dp.detect_high_angles, "data/171214_1/correction_angle_100_55")
-    # dp.set_max_angles(90, 50)
-    # dp.do_all(dp.detect_high_angles, "data/171214_1/correction_angle_90_50")
-    # dp.set_max_angles(80, 50)
-    # dp.do_all(dp.detect_high_angles, "data/171214_1/correction_angle_80_50")
-

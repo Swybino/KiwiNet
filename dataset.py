@@ -104,9 +104,15 @@ class RandomTranslation(object):
         self.img_size = img_size
 
     def __call__(self, sample):
+        x_shift = np.random.randint(-10, 10)
+        y_shift = np.random.randint(-10, 10)
         inputs = sample["inputs"]
+        for i in range(3, len(inputs), 2):
+            inputs[i] += x_shift
+            inputs[i+1] += y_shift
 
-        return
+        sample["inputs"] = inputs
+        return sample
 
 
 class Normalization(object):
@@ -149,4 +155,4 @@ if __name__ == "__main__":
         #     if l == "z":
         #         count += 1
         #     total += 1
-    print(count/total)
+    print(count / total)

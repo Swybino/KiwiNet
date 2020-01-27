@@ -1,5 +1,4 @@
 opencv-python
-torchvision
 numpy
 pandas
 torch
