@@ -30,7 +30,7 @@ class Kiwi(nn.Module):
         e = self.eye_features(e)
         e = e.view(-1, 25088)
         e = self.fc(e)
-        x = torch.cat((e, x), dim=1)
+        x = torch.cat([e.cuda(), x.cuda()], dim=1)
         x = self.core(x)
         x = self.out1(x)
         x = x.view(-1, self.kids_nb)

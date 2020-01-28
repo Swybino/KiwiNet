@@ -92,6 +92,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     suffix = utils.build_suffix(args.structure)
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    print(torch.cuda.is_available())
 
     if args.train_set is not None:
         train_set_file = args.train_set
@@ -126,7 +127,7 @@ if __name__ == '__main__':
     model_save_path = "model/model%s_%s.pt" % (suffix, today)
     history_save_path = "model/history%s_%s.p" % (suffix, today)
 
-    criterion = nn.CrossEntropyLoss(weight=torch.Tensor([0.25, 1, 1, 1, 1, 1]))
+    criterion = nn.CrossEntropyLoss(weight=torch.Tensor([0.25, 1, 1, 1, 1, 1]).cuda())
     optimizer = optim.SGD(model.parameters(), lr=args.learning_rate, momentum=0.9)
     loss_history = []
 
@@ -137,8 +138,7 @@ if __name__ == '__main__':
         for i, data in enumerate(train_loader, 0):
 
             inputs, eye_img, target = data['inputs'], data['eye_img'], data['labels']
-            inputs.cuda()
-            eye_img.cuda()
+            inputs, eye_img, target = inputs.cuda(), eye_img.cuda(), target.cuda()
             # zero the parameter gradients
             optimizer.zero_grad()
             outputs = model(inputs, eye_img)
