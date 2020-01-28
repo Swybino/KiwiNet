@@ -22,10 +22,10 @@ def accuracy(net, test_loader, *, confusion_matrix=True, visualize=False):
     cm = ConfusionMatrix()
     model.eval()
     with torch.no_grad():
-
         for i, test_data in enumerate(test_loader):
             inputs, labels = test_data['inputs'], test_data['labels']
             # print(inputs, labels)
+            inputs, labels = inputs.cuda(), labels.cuda()
             outputs = net(inputs)
             _, predicted = torch.max(outputs.data, 1)
 
@@ -119,13 +119,14 @@ if __name__ == '__main__':
     test_loader = DataLoader(test_set, batch_size=2, shuffle=True, num_workers=4)
 
     model = Kiwi(config.nb_kids, args.structure)
+    model.cuda()
     if args.load_state is not None:
         model.load_state_dict(torch.load(args.load_state))
     today = date.today()
     model_save_path = "model/model%s_%s.pt" % (suffix, today)
     history_save_path = "model/history%s_%s.p" % (suffix, today)
 
-    criterion = nn.CrossEntropyLoss(weight=torch.Tensor([0.25, 1, 1, 1, 1, 1]))
+    criterion = nn.CrossEntropyLoss(weight=torch.Tensor([0.25, 1, 1, 1, 1, 1]).cuda())
     optimizer = optim.SGD(model.parameters(), lr=args.learning_rate, momentum=0.9)
     loss_history = []
 
@@ -136,7 +137,7 @@ if __name__ == '__main__':
         for i, data in enumerate(train_loader, 0):
 
             inputs, target = data['inputs'], data['labels']
-
+            inputs, target = inputs.cuda(), target.cuda()
             # zero the parameter gradients
             optimizer.zero_grad()
             outputs = model(inputs)
