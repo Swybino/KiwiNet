@@ -24,9 +24,10 @@ def accuracy(net, test_loader, *, confusion_matrix=True, visualize=False):
     with torch.no_grad():
 
         for i, test_data in enumerate(test_loader):
-            inputs, labels = test_data['inputs'], test_data['labels']
-            # print(inputs, labels)
-            outputs = net(inputs)
+
+            inputs, eye_img, target = data['inputs'], data['eye_img'], data['labels']
+            inputs, eye_img, target = inputs.cuda(), eye_img.cuda(), target.cuda()
+            outputs = net(inputs, eye_img)
             _, predicted = torch.max(outputs.data, 1)
 
             # display_results(test_data, predicted)
@@ -35,8 +36,8 @@ def accuracy(net, test_loader, *, confusion_matrix=True, visualize=False):
             if confusion_matrix:
                 cm.add_results(test_data['name_label'], names_outputs)
 
-            total += labels.size(0)
-            correct += (predicted == labels).sum().item()
+            total += target.size(0)
+            correct += (predicted == target).sum().item()
     model.train()
     cm.normalize()
     print("Accuracy: %0.4f" % (correct / total), total, correct, cm,  sep="\n")
