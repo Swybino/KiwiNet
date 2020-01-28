@@ -20,6 +20,23 @@ def bbox_landmarks_match(bbox, landmarks):
     return bbox_iou(bbox, lm_bbox) > 0.35
 
 
+def get_roi(img, bbox, *, scale=1, padding=0):
+    size = max(bbox[2], bbox[3])
+    x_c = bbox[0] + bbox[2] / 2
+    y_c = bbox[1] + bbox[3] / 2
+    new_size = (size * scale) + padding
+    xmin = int(x_c - new_size / 2)
+    ymin = int(y_c - new_size / 2)
+    xmax = int(x_c + new_size / 2)
+    ymax = int(y_c + new_size / 2)
+    return xmin, ymin, xmax, ymax
+
+
+def crop_roi(img, bbox, *, scale=1, padding=0):
+    xmin, ymin, xmax, ymax = get_roi(img, bbox, scale=scale, padding=padding)
+    return img[ymin:ymax, xmin:xmax], [xmin, ymin, xmin - xmax, ymin - ymax]
+
+
 def gradient(y1, y2, t=1):
     return (y2 - y1) / t
 

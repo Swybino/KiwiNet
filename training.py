@@ -115,7 +115,7 @@ if __name__ == '__main__':
                                ToTensor()
                            ]))
 
-    train_loader = DataLoader(train_set, batch_size=48, shuffle=True, num_workers=8)
+    train_loader = DataLoader(train_set, batch_size=2, shuffle=True, num_workers=8)
     test_loader = DataLoader(test_set, batch_size=2, shuffle=True, num_workers=4)
 
     model = Kiwi(config.nb_kids, args.structure)
@@ -129,17 +129,17 @@ if __name__ == '__main__':
     optimizer = optim.SGD(model.parameters(), lr=args.learning_rate, momentum=0.9)
     loss_history = []
 
-    accuracy(model, test_loader)
+    # accuracy(model, test_loader)
     for epoch in range(args.epochs):  # loop over the dataset multiple times
-        model.train()
+        model.train(True)
         running_loss = 0.0
         for i, data in enumerate(train_loader, 0):
 
-            inputs, target = data['inputs'], data['labels']
+            inputs, target, eye_img = data['inputs'], data['labels'], data['eye_img']
 
             # zero the parameter gradients
             optimizer.zero_grad()
-            outputs = model(inputs)
+            outputs = model(inputs, eye_img)
             loss = criterion(outputs, target)
             loss.backward()
             optimizer.step()
