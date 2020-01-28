@@ -115,10 +115,11 @@ if __name__ == '__main__':
                                ToTensor()
                            ]))
 
-    train_loader = DataLoader(train_set, batch_size=2, shuffle=True, num_workers=8)
+    train_loader = DataLoader(train_set, batch_size=8, shuffle=True, num_workers=8)
     test_loader = DataLoader(test_set, batch_size=2, shuffle=True, num_workers=4)
 
     model = Kiwi(config.nb_kids, args.structure)
+    model.cuda()
     if args.load_state is not None:
         model.load_state_dict(torch.load(args.load_state))
     today = date.today()
@@ -135,8 +136,9 @@ if __name__ == '__main__':
         running_loss = 0.0
         for i, data in enumerate(train_loader, 0):
 
-            inputs, target, eye_img = data['inputs'], data['labels'], data['eye_img']
-
+            inputs, eye_img, target = data['inputs'], data['eye_img'], data['labels']
+            inputs.cuda()
+            eye_img.cuda()
             # zero the parameter gradients
             optimizer.zero_grad()
             outputs = model(inputs, eye_img)
