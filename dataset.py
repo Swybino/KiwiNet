@@ -70,10 +70,18 @@ class FoADataset(Dataset):
             label = 0
 
         # Eye Image
-        landmarks = frame_data[labels["name"]][config.LANDMARKS_KEY]
-        img = Video(os.path.join(config.video_root, "%s.MP4" % labels["video"]))[int(labels["frame"])]
-        eye_img = self.get_eye_image(img, landmarks)
-        eye_img = cv2.resize(eye_img, (224, 224))
+        confidence = frame_data[labels["name"]][config.CONFIDENCE_KEY]
+        if confidence > 0:
+            landmarks = frame_data[labels["name"]][config.LANDMARKS_KEY]
+            img = Video(os.path.join(config.video_root, "%s.MP4" % labels["video"]))[int(labels["frame"])]
+            eye_img = self.get_eye_image(img, landmarks)
+            if 0 in eye_img.shape:
+                eye_img = np.zeros((224, 224, 3))
+            else:
+                eye_img = cv2.resize(eye_img, (224, 224))
+        else:
+            eye_img = np.zeros((224,224,3))
+
 
         sample = {"inputs": inputs, "labels": label, "frame": labels["frame"], "name_label": labels["target"],
                   "names_list": name_list, "video": labels["video"], "positions": torch.Tensor(main_pos + bboxes),
@@ -91,11 +99,10 @@ class FoADataset(Dataset):
         eye_img, _ = utils.utils.crop_roi(img, eye_bbox, padding=10)
         return eye_img
 
+
 class RandomPermutations(object):
     """
-
     """
-
     def __init__(self):
         return
 
@@ -157,22 +164,23 @@ if __name__ == "__main__":
     # dataset = FoADataset("data/labels/test_dataset_i.csv", "data/inputs",
     #                      transform=transforms.Compose([Normalization(), ToTensor()]))
 
-    dataset = FoADataset("data/labels/labels.csv", "data/inputs",
+    dataset = FoADataset("data/labels/test_labels_frame_patches.csv", "data/inputs",
                          transform=transforms.Compose([ToTensor()]))
 
-    dataloader = DataLoader(dataset, batch_size=4,
-                            shuffle=True, num_workers=0)
+    dataloader = DataLoader(dataset, batch_size=8,
+                            shuffle=True, num_workers=8)
 
     total = 0
     count = 0
     for i_batch, sample in enumerate(dataloader):
-        print("********",sample["eye_img"].size())
-        for i, f in enumerate(sample["eye_img"]):
-
-            cv2.imshow("img%s" %i, cv2.cvtColor(np.array(f), cv2.COLOR_BGR2RGB))
-        cv2.waitKey()
-        cv2.destroyAllWindows()
-        print(sample)
-        break
+        print(i_batch)
+        # print("********",sample["eye_img"].size())
+        # for i, f in enumerate(sample["eye_img"]):
+        #
+        #     cv2.imshow("img%s" %i, cv2.cvtColor(np.array(f), cv2.COLOR_BGR2RGB))
+        # cv2.waitKey()
+        # cv2.destroyAllWindows()
+        # print(sample)
+        # break
 
     print(count / total)

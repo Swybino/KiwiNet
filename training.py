@@ -14,6 +14,7 @@ from utils.confusion_matrix import ConfusionMatrix
 from utils.video import Video
 from utils.viewer import Viewer
 import os
+import time
 
 
 def accuracy(net, test_loader, *, confusion_matrix=True, visualize=False):
@@ -25,7 +26,7 @@ def accuracy(net, test_loader, *, confusion_matrix=True, visualize=False):
 
         for i, test_data in enumerate(test_loader):
 
-            inputs, eye_img, target = data['inputs'], data['eye_img'], data['labels']
+            inputs, eye_img, target = test_data['inputs'], test_data['eye_img'], test_data['labels']
             inputs, eye_img, target = inputs.cuda(), eye_img.cuda(), target.cuda()
             outputs = net(inputs, eye_img)
             _, predicted = torch.max(outputs.data, 1)
@@ -118,7 +119,7 @@ if __name__ == '__main__':
                            ]))
 
     train_loader = DataLoader(train_set, batch_size=8, shuffle=True, num_workers=8)
-    test_loader = DataLoader(test_set, batch_size=2, shuffle=True, num_workers=4)
+    test_loader = DataLoader(test_set, batch_size=8, shuffle=True, num_workers=8)
 
     model = Kiwi(config.nb_kids, args.structure)
     model.cuda()
@@ -132,7 +133,7 @@ if __name__ == '__main__':
     optimizer = optim.SGD(model.parameters(), lr=args.learning_rate, momentum=0.9)
     loss_history = []
 
-    # accuracy(model, test_loader)
+    accuracy(model, test_loader)
     for epoch in range(args.epochs):  # loop over the dataset multiple times
         model.train(True)
         running_loss = 0.0
