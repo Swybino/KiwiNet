@@ -20,7 +20,6 @@ class Kiwi(nn.Module):
         self.out1 = nn.Linear(param_list[-1], n_out)
 
     def forward(self, x):
-        x = x.type(torch.FloatTensor)
         x = x.view(-1, self.in_shape)
         x = self.core(x)
         x = self.out1(x)
