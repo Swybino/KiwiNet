@@ -4,7 +4,7 @@ import cv2
 import numpy as np
 import math
 import config
-from video import Video
+from utils.video import Video
 
 
 def bbox_iou(boxA, boxB):
