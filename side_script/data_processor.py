@@ -86,14 +86,18 @@ class DataProcessor:
             json.dump(self.frame_data, outfile)
         print("file written", path)
 
-    def do_all(self, function, out_dir=None, start=0, end=None):
+    def do_all(self, functions, out_dir=None, start=0, end=None):
         if end is None:
             end = self.data_length
         if end < 0:
             end = self.data_length + end
+
         for idx in range(start, end):
             self.get_item(idx)
-            function(out_dir)
+            if type(functions) == list:
+                for function in functions:
+                    function()
+            self.write_frame_data(out_dir)
 
     def compare_sizes(self, out_dir=None):
         for name, data in self.frame_data.items():
@@ -101,7 +105,6 @@ class DataProcessor:
             landmarks = data[config.LANDMARKS_KEY]
             if not utils.bbox_landmarks_match(bbox, landmarks):
                 data[config.CONFIDENCE_KEY] = 0
-        self.write_frame_data(out_dir)
 
     def detect_high_angles_all(self, out_dir=None):
         for idx in range(self.data_length):
@@ -113,33 +116,11 @@ class DataProcessor:
             if not -self.max_yaw < kid_data[config.POSE_KEY][0] < self.max_yaw \
                     or not -self.max_pitch < kid_data[config.POSE_KEY][1] < self.max_pitch:
                 kid_data[config.CONFIDENCE_KEY] = 0
-        self.write_frame_data(out_dir)
-
-    def remove_high_gradient(self):
-        frame_idx = self.frame_idx
-        data_previous = self.get_item(self.frame_idx-1)
-        self.get_frame_data()
-        return
-
-    def fill_in_gradient(self, out_dir=None):
-        frame_idx = self.frame_idx
-        data_previous = self.get_item(frame_idx - 1)
-        data_next = self.get_item(frame_idx + 1)
-        self.get_item(frame_idx)
-        for name, kid_data in self.frame_data.items():
-            if data_next[name][config.CONFIDENCE_KEY] == 1 \
-                    and data_previous[name][config.CONFIDENCE_KEY] == 1 \
-                    and kid_data[config.CONFIDENCE_KEY] == 0:
-                gradient = np.array(data_next[name][config.POSE_KEY]) \
-                           - np.array(data_previous[name][config.POSE_KEY]) / 2
-                if np.linalg.norm(gradient) < 20:
-                    print("aaaa")
 
     def get_pose_from_landmarks(self, out_dir=None):
         for name, kid_data in self.frame_data.items():
             roll, pitch, yaw = solve_head_pose(kid_data[config.LANDMARKS_KEY])
             kid_data[config.POSE_KEY] = [yaw, pitch, roll]
-        self.write_frame_data(out_dir)
 
     def percentage_blank(self):
         """
@@ -155,50 +136,21 @@ class DataProcessor:
                     blank_count = blank_count + 1
         return round(blank_count / total_count, 2)
 
-    def data_initialization(self, out_dir=None):
-        bbox_data = self.import_data(os.path.join(self.root_dir, "%s.txt" % self.video_title))
-        for idx in range(self.data_length):
-            self.frame_idx = idx
-            self.get_original_frame_data(bbox_data)
-            self.remove_lists()
-            self.radian_to_degrees()
-            self.write_frame_data(out_dir)
-
-    def remove_lists(self):
-        for name, data in self.frame_data.items():
-            if type(data[config.CONFIDENCE_KEY]) != list:
-                continue
-            else:
-                data[config.CONFIDENCE_KEY] = data[config.CONFIDENCE_KEY][0]
-                data[config.POSE_KEY] = data[config.POSE_KEY][0]
-                data[config.LANDMARKS_KEY] = data[config.LANDMARKS_KEY][0]
-                data[config.ROTATION_MATRIX_KEY] = data[config.ROTATION_MATRIX_KEY][0]
-
     def radian_to_degrees(self):
         for name, kid_data in self.frame_data.items():
             kid_data[config.POSE_KEY] = [round(a * 180 / math.pi, 1) for a in
                                          kid_data[config.POSE_KEY]]
 
-    def make_data_range(self, range_size=5):
-        frame_idx = self.frame_idx
-        data = [self.get_item(frame_idx)]
-        for i in range(range_size):
-            data.insert(0, self.get_item(frame_idx - i))
-            data.append(self.get_item(frame_idx + i))
-        RangeProcessor(data)
-        self.get_item(frame_idx)
-
 
 if __name__ == "__main__":
-    intake = "data/171218_1_1/data"
-    video_name = "171218_1_1"
-    out = "data/171218_1_1/processed_data"
+    intake = "data/171218_2_1/data"
+    video_name = "171218_2_1"
+    out = "data/171218_2_1/processed_data2"
 
     dp = DataProcessor(intake, video_name)
-    dp.do_all(dp.compare_sizes, out)
-    dp = DataProcessor(out, video_name)
     dp.set_max_angles(100, 55)
-    dp.do_all(dp.detect_high_angles, out)
+    dp.do_all([dp.get_pose_from_landmarks, dp.compare_sizes, dp.detect_high_angles], out)
+    dp = DataProcessor(out, video_name)
     print(dp.percentage_blank())
     print("----OK----")
 

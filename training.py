@@ -118,7 +118,7 @@ if __name__ == '__main__':
                            ]))
 
     train_loader = DataLoader(train_set, batch_size=32, shuffle=True, num_workers=8)
-    test_loader = DataLoader(test_set, batch_size=32, shuffle=True, num_workers=8)
+    test_loader = DataLoader(test_set, batch_size=32, shuffle=False, num_workers=8)
 
     model = Kiwi(config.nb_kids, args.structure)
     model.cuda()
@@ -155,7 +155,8 @@ if __name__ == '__main__':
 
             loss_history.append((epoch, i, round(loss.item(), 3)))
         stop = timeit.default_timer()
-        print('Epoch Time: %d%d%df', stop - start)
+        time = stop - start
+        print('Epoch Time: %d:%d:%df'  %(time//360, (time%3600)//60, (time%3600)%60))
 
         torch.save(model.state_dict(), model_save_path)
         save_history(history_save_path, loss_history)
