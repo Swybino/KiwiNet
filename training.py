@@ -117,8 +117,8 @@ if __name__ == '__main__':
                                ToTensor()
                            ]))
 
-    train_loader = DataLoader(train_set, batch_size=48, shuffle=True, num_workers=8)
-    test_loader = DataLoader(test_set, batch_size=2, shuffle=True, num_workers=4)
+    train_loader = DataLoader(train_set, batch_size=32, shuffle=True, num_workers=8)
+    test_loader = DataLoader(test_set, batch_size=32, shuffle=True, num_workers=8)
 
     model = Kiwi(config.nb_kids, args.structure)
     model.cuda()
