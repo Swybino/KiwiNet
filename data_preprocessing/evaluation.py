@@ -1,4 +1,4 @@
-from side_script.data_processor import DataProcessor
+from data_preprocessing.data_processor import DataProcessor
 from utils.viewer import Viewer
 import config
 import os

@@ -3,9 +3,7 @@ import math
 import config
 from utils import utils
 import os
-from side_script.pose_estimator import solve_head_pose
-import numpy as np
-from side_script.range_processor import RangeProcessor
+from data_preprocessing.pose_estimator import solve_head_pose
 
 
 class DataProcessor:

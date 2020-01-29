@@ -1,6 +1,8 @@
 import cv2
 import numpy as np
 from math import cos, sin
+from pathlib import Path
+import os
 
 LANDMARK_COLOR = (255, 255, 255)
 SCALING = 1
@@ -117,3 +119,16 @@ class Viewer:
                 break
         cv2.destroyAllWindows()
         return eval
+
+    def blur(self, bbox, ksize=20):
+        sub_face = self.img[bbox[1]:bbox[1] + bbox[3], bbox[0]:bbox[0] + bbox[2]]
+        # apply a gaussian blur on this new recangle image
+        sub_face = cv2.GaussianBlur(sub_face, (ksize, ksize), 30)
+        # merge this blurry rectangle to our final image
+        self.img[bbox[1]:bbox[1] + bbox[3], bbox[0]:bbox[0] + bbox[2]] = sub_face
+
+    def save_img(self, path):
+        path = Path(path)
+        if not os.path.exists(path.parent):
+            os.makedirs(path.parent)
+        cv2.imwrite(path, self.img)

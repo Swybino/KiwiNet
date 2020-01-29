@@ -90,6 +90,7 @@ if __name__ == '__main__':
     parser.add_argument('--test_set', type=str, help="test set location")
     parser.add_argument('--print_rate', type=int, default=200, help='print every * mini epochs')
     parser.add_argument('--accuracy_rate', type=int, default=10, help='tests accuracy every * epochs')
+    parser.add_argument('--batch_size', type=int, default=16, help='number of data per batch')
 
     args = parser.parse_args()
     suffix = utils.build_suffix(args.structure)
@@ -118,8 +119,8 @@ if __name__ == '__main__':
                                ToTensor()
                            ]))
 
-    train_loader = DataLoader(train_set, batch_size=8, shuffle=True, num_workers=8)
-    test_loader = DataLoader(test_set, batch_size=8, shuffle=True, num_workers=8)
+    train_loader = DataLoader(train_set, batch_size=args.batch_size, shuffle=True, num_workers=8)
+    test_loader = DataLoader(test_set, batch_size=args.batch_size, shuffle=False, num_workers=8)
 
     model = Kiwi(config.nb_kids, args.structure)
     model.cuda()
