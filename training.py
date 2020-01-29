@@ -14,7 +14,7 @@ from utils.confusion_matrix import ConfusionMatrix
 from utils.video import Video
 from utils.viewer import Viewer
 import os
-import time
+import timeit
 
 
 def accuracy(net, test_loader, *, confusion_matrix=True, visualize=False):
@@ -135,6 +135,7 @@ if __name__ == '__main__':
 
     accuracy(model, test_loader)
     for epoch in range(args.epochs):  # loop over the dataset multiple times
+        start = timeit.default_timer()
         model.train(True)
         running_loss = 0.0
         for i, data in enumerate(train_loader, 0):
@@ -154,6 +155,9 @@ if __name__ == '__main__':
                 running_loss = 0.0
 
             loss_history.append((epoch, i, round(loss.item(), 3)))
+        stop = timeit.default_timer()
+        print('Epoch Time: %0.1f', stop - start)
+
         torch.save(model.state_dict(), model_save_path)
         save_history(history_save_path, loss_history)
         if epoch % args.accuracy_rate == args.accuracy_rate-1:

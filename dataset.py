@@ -9,8 +9,9 @@ from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
 import utils.utils
 import config
-from utils.video import Video
+import matplotlib.image as mpimg
 import cv2
+
 
 class FoADataset(Dataset):
     def __init__(self, csv_file, root_dir, transform=None):
@@ -72,37 +73,32 @@ class FoADataset(Dataset):
         # Eye Image
         confidence = frame_data[labels["name"]][config.CONFIDENCE_KEY]
         if confidence > 0:
-            landmarks = frame_data[labels["name"]][config.LANDMARKS_KEY]
-            img = Video(os.path.join(config.video_root, "%s.MP4" % labels["video"]))[int(labels["frame"])]
-            eye_img = self.get_eye_image(img, landmarks)
-            if 0 in eye_img.shape:
-                eye_img = np.zeros((224, 224, 3))
-            else:
-                eye_img = cv2.resize(eye_img, (224, 224))
+            path = os.path.join(config.eye_img_root,
+                                "%s_%s_%s.jpg" % (labels["video"], labels["frame"], labels["name"]))
+            if os.path.exists(path):
+                eye_img = np.array(mpimg.imread(path))
+            else :
+                landmarks = frame_data[labels["name"]][config.LANDMARKS_KEY]
+                roll = frame_data[labels["name"]][config.POSE_KEY][2]
+                eye_img = utils.utils.get_eye_image_from_video(labels["video"], labels["frame"], landmarks, roll)
+                cv2.imwrite(path, cv2.cvtColor(eye_img, cv2.COLOR_BGR2RGB))
         else:
-            eye_img = np.zeros((224,224,3))
+            eye_img = np.zeros((224, 224, 3))
 
-
-        sample = {"inputs": inputs, "labels": label, "frame": labels["frame"], "name_label": labels["target"],
-                  "names_list": name_list, "video": labels["video"], "positions": torch.Tensor(main_pos + bboxes),
-                  "eye_img": eye_img}
+        sample = {"inputs": inputs, "labels": label, "frame": labels["frame"],
+                  "name_label": labels["target"], "names_list": name_list,
+                  "video": labels["video"], "positions": torch.Tensor(main_pos + bboxes),
+                  "eye_img": eye_img, "name": labels["name"]}
 
         if self.transform:
             sample = self.transform(sample)
         return sample
 
-    def get_eye_image(self, img, landmarks):
-        eye_bbox = [min(landmarks[0][42:48]),
-                    min(landmarks[1][42:48]),
-                    max(landmarks[0][42:48])-min(landmarks[0][42:48]),
-                    max(landmarks[1][42:48])-min(landmarks[1][42:48])]
-        eye_img, _ = utils.utils.crop_roi(img, eye_bbox, padding=10)
-        return eye_img
-
 
 class RandomPermutations(object):
     """
     """
+
     def __init__(self):
         return
 
@@ -164,23 +160,18 @@ if __name__ == "__main__":
     # dataset = FoADataset("data/labels/test_dataset_i.csv", "data/inputs",
     #                      transform=transforms.Compose([Normalization(), ToTensor()]))
 
-    dataset = FoADataset("data/labels/test_labels_frame_patches.csv", "data/inputs",
-                         transform=transforms.Compose([ToTensor()]))
+    # dataset = FoADataset("data/labels/test_labels_frame_patches.csv", "data/inputs",
+    #                      transform=transforms.Compose([ToTensor()]))
 
-    dataloader = DataLoader(dataset, batch_size=8,
-                            shuffle=True, num_workers=8)
+    dataset = FoADataset("data/labels/labels.csv", "data/inputs",
+                             transform=transforms.Compose([ToTensor()]))
+
+    dataloader = DataLoader(dataset, batch_size=2,
+                            shuffle=False, num_workers=0)
 
     total = 0
     count = 0
     for i_batch, sample in enumerate(dataloader):
-        print(i_batch)
-        # print("********",sample["eye_img"].size())
-        # for i, f in enumerate(sample["eye_img"]):
-        #
-        #     cv2.imshow("img%s" %i, cv2.cvtColor(np.array(f), cv2.COLOR_BGR2RGB))
-        # cv2.waitKey()
-        # cv2.destroyAllWindows()
-        # print(sample)
-        # break
+        print("#####",i_batch, sample["video"], sample["frame"])
 
     print(count / total)
