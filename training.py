@@ -156,7 +156,7 @@ if __name__ == '__main__':
 
             loss_history.append((epoch, i, round(loss.item(), 3)))
         stop = timeit.default_timer()
-        print('Epoch Time: %0.1f', stop - start)
+        print('Epoch Time: %d%d%df', stop - start)
 
         torch.save(model.state_dict(), model_save_path)
         save_history(history_save_path, loss_history)
