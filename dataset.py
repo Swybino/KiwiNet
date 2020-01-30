@@ -81,14 +81,20 @@ class FoADataset(Dataset):
                 landmarks = frame_data[labels["name"]][config.LANDMARKS_KEY]
                 roll = frame_data[labels["name"]][config.POSE_KEY][2]
                 eye_img = utils.utils.get_eye_image_from_video(labels["video"], labels["frame"], landmarks, roll)
-                cv2.imwrite(path, cv2.cvtColor(eye_img, cv2.COLOR_BGR2RGB))
+                eye_img_save =cv2.cvtColor(eye_img, cv2.COLOR_BGR2RGB)
+                cv2.imwrite(path, eye_img_save)
         else:
             eye_img = np.zeros((224, 224, 3))
 
-        sample = {"inputs": inputs, "labels": label, "frame": labels["frame"],
-                  "name_label": labels["target"], "names_list": name_list,
-                  "video": labels["video"], "positions": torch.Tensor(main_pos + bboxes),
-                  "eye_img": eye_img, "name": labels["name"]}
+        sample = {"inputs": inputs,
+                  "labels": label,
+                  "eye_img": eye_img,
+                  "frame": labels["frame"],
+                  "name_label": labels["target"],
+                  "names_list": name_list,
+                  "video": labels["video"],
+                  "positions": torch.Tensor(main_pos + bboxes),
+                  "name": labels["name"]}
 
         if self.transform:
             sample = self.transform(sample)
@@ -167,11 +173,14 @@ if __name__ == "__main__":
                              transform=transforms.Compose([ToTensor()]))
 
     dataloader = DataLoader(dataset, batch_size=2,
-                            shuffle=False, num_workers=0)
+                            shuffle=True, num_workers=0)
+
+
+    # dataset.__getitem__(31549)
 
     total = 0
     count = 0
     for i_batch, sample in enumerate(dataloader):
         print("#####",i_batch, sample["video"], sample["frame"])
-
-    print(count / total)
+    #
+    # print(count / total)

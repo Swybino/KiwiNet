@@ -3,7 +3,7 @@ import math
 import config
 from utils import utils
 import os
-from data_preprocessing.pose_estimator import solve_head_pose
+from pose_estimator import solve_head_pose
 
 
 class DataProcessor:

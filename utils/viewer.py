@@ -120,7 +120,7 @@ class Viewer:
         cv2.destroyAllWindows()
         return eval
 
-    def blur(self, bbox, ksize=20):
+    def blur(self, bbox, ksize=15):
         sub_face = self.img[bbox[1]:bbox[1] + bbox[3], bbox[0]:bbox[0] + bbox[2]]
         # apply a gaussian blur on this new recangle image
         sub_face = cv2.GaussianBlur(sub_face, (ksize, ksize), 30)
@@ -131,4 +131,4 @@ class Viewer:
         path = Path(path)
         if not os.path.exists(path.parent):
             os.makedirs(path.parent)
-        cv2.imwrite(path, self.img)
+        cv2.imwrite(str(path), self.img)

@@ -75,8 +75,17 @@ def get_eye_image_from_video(video, frame, landmarks, roll):
     landmarks = (np.array(landmarks) / 640) * img_size
     image_center = tuple(np.array(img.shape[1::-1]) / 2)
     for i in range(len(landmarks[0])):
-        landmarks[0, i], landmarks[1, i] = rotate_point(image_center, (landmarks[0, i], landmarks[1, i]), roll)
-    rotated_img = rotate_image(img, - roll)
+        landmarks[0, i], landmarks[1, i] = rotate_point(image_center, (landmarks[0, i], landmarks[1, i]), -roll)
+    rotated_img = rotate_image(img, roll)
+
+    # print(roll)
+    # r = rotated_img.copy()
+    # r = cv2.cvtColor(r, cv2.COLOR_BGR2RGB)
+    # for i in range(len(landmarks[0])):
+    #     cv2.circle(r, (int(landmarks[0, i]), int(landmarks[1, i])), 1, (255, 255, 255))
+    # cv2.imshow("img", r)
+    # cv2.waitKey()
+    # cv2.destroyAllWindows()
 
     eye_bbox = [min(landmarks[0, 36:48]),
                 min(landmarks[1, 36:48]),
