@@ -36,10 +36,11 @@ def get_roi(img, bbox, *, scale=1, padding=0):
     x_c = bbox[0] + bbox[2] / 2
     y_c = bbox[1] + bbox[3] / 2
     new_size = (size * scale) + 2 * padding
-    xmin = int(x_c - new_size / 2)
-    ymin = int(y_c - new_size / 2)
-    xmax = int(x_c + new_size / 2)
-    ymax = int(y_c + new_size / 2)
+
+    xmin = int(max(0, x_c - new_size / 2))
+    ymin = int(max(0, y_c - new_size / 2))
+    xmax = int(min(img.shape[0], x_c + new_size / 2))
+    ymax = int(min(img.shape[1], y_c + new_size / 2))
     return xmin, ymin, xmax, ymax
 
 

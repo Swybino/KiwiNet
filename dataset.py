@@ -82,7 +82,7 @@ class FoADataset(Dataset):
                 roll = frame_data[labels["name"]][config.POSE_KEY][2]
                 eye_img = utils.utils.get_eye_image_from_video(labels["video"], labels["frame"], landmarks, roll)
                 print(eye_img.shape)
-                print(labels["video"], labels["frame"])
+                print(labels["video"], labels["frame"], labels["name"])
 
                 eye_img_save = cv2.cvtColor(eye_img, cv2.COLOR_BGR2RGB)
                 cv2.imwrite(path, eye_img_save)
@@ -172,17 +172,19 @@ if __name__ == "__main__":
     # dataset = FoADataset("data/labels/test_labels_frame_patches.csv", "data/inputs",
     #                      transform=transforms.Compose([ToTensor()]))
 
-    dataset = FoADataset("data/labels/labels.csv", "data/inputs",
+    dataset = FoADataset("data/labels/test_labels_frame_patches.csv", "data/inputs",
                          transform=transforms.Compose([ToTensor()]))
 
     dataloader = DataLoader(dataset, batch_size=2,
                             shuffle=True, num_workers=0)
 
-    # dataset.__getitem__(31549)
+    for i in range(8932, 10000):
+        print(i)
+        dataset.__getitem__(i)
 
-    total = 0
-    count = 0
-    for i_batch, sample in enumerate(dataloader):
-        print("#####", i_batch, sample["video"], sample["frame"])
+    # total = 0
+    # count = 0
+    # for i_batch, sample in enumerate(dataloader):
+    #     print("#####", i_batch, sample["video"], sample["frame"])
     #
     # print(count / total)
