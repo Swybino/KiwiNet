@@ -82,6 +82,8 @@ class FoADataset(Dataset):
                 roll = frame_data[labels["name"]][config.POSE_KEY][2]
                 eye_img = utils.utils.get_eye_image_from_video(labels["video"], labels["frame"], landmarks, roll)
                 print(eye_img.shape)
+                print(labels["video"], labels["frame"])
+
                 eye_img_save = cv2.cvtColor(eye_img, cv2.COLOR_BGR2RGB)
                 cv2.imwrite(path, eye_img_save)
         else:
