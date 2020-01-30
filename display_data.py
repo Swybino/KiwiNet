@@ -10,7 +10,7 @@ import numpy as np
 def display_file_data(video, frame):
     file = "%s_%s.json" % (video, frame)
     data = utils.read_input(os.path.join(config.inputs_dir, file))
-    print(os.path.join(config.video_root, "%s.MP4" % video))
+    # print(os.path.join(config.video_root, "%s.MP4" % video))
     img = Video(os.path.join(config.video_root, "%s.MP4" % video))[int(frame)]
     img_size = img.shape[0]
     viewer = Viewer(img)
@@ -49,12 +49,18 @@ if __name__ == '__main__':
     parser.add_argument('-s', '--show', action='store_true', help='')
     parser.add_argument('-o', '--out', type=str)
     parser.add_argument('-v', '--videos', nargs='+', type=str, help='')
-    parser.add_argument('-f', '--frames', nargs='+', type=str, help='')
+    parser.add_argument('-f', '--frames', nargs='+', type=int, help='')
+    parser.add_argument('-r', '--frame_range', nargs='+', type=int, help='')
     args = parser.parse_args()
 
-    if args.videos is not None and args.frames is not None:
+    if args.videos is not None and (args.frames is not None or args.frame_range is not None):
+        if args.frames is not None:
+            frames_list = args.frames
+        elif args.frame_range is not None:
+            frames_list = range(args.frame_range[0],args.frame_range[1])
+        else: frames_list = []
         for v in args.videos:
-            for f in args.frames:
+            for f in frames_list:
                 display_file_data(v, f)
     else:
         for file in os.listdir(config.inputs_dir):
