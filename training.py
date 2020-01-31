@@ -15,7 +15,7 @@ from utils.video import Video
 from utils.viewer import Viewer
 import os
 import timeit
-
+import math
 
 def accuracy(net, test_loader, *, confusion_matrix=True, visualize=False):
     correct = 0
@@ -40,7 +40,7 @@ def accuracy(net, test_loader, *, confusion_matrix=True, visualize=False):
             correct += (predicted == labels).sum().item()
     model.train()
     cm.normalize()
-    print("Accuracy: %0.4f" % (correct / total), total, correct, cm,  sep="\n")
+    print("Accuracy: %0.4f" % (correct / total), total, correct, cm, sep="\n")
     return correct / total, cm
 
 
@@ -54,13 +54,14 @@ def save_results(data, frame):
 def display_results(data, predicted):
     print(predicted)
     for i in range(predicted.size(0)):
-        video_path = os.path.join(config.video_root, "%s.MP4" %data["video"][i])
+        video_path = os.path.join(config.video_root, "%s.MP4" % data["video"][i])
         v = Viewer(Video(video_path)[data["frame"][i]])
         print("######", data["name_label"][i])
-        kid, focus = data["positions"][i][0:2], data["positions"][i][2*predicted[i]:2+2*predicted[i]]
+        kid, focus = data["positions"][i][0:2], data["positions"][i][2 * predicted[i]:2 + 2 * predicted[i]]
         v.plt_results(kid, focus)
         v.show()
     return
+
 
 def output_processing(outputs, names_list):
     r = []
@@ -89,6 +90,7 @@ if __name__ == '__main__':
     parser.add_argument('--test_set', type=str, help="test set location")
     parser.add_argument('--print_rate', type=int, default=200, help='print every * mini epochs')
     parser.add_argument('--accuracy_rate', type=int, default=10, help='tests accuracy every * epochs')
+    parser.add_argument('--batch_size', type=int, default=16, help='number of data per batch')
 
     args = parser.parse_args()
     suffix = utils.build_suffix(args.structure)
@@ -112,21 +114,22 @@ if __name__ == '__main__':
         test_set_file = "data/labels/test_labels_frame_patches.csv"
 
     test_set = FoADataset(test_set_file, "data/inputs",
-                           transform=transforms.Compose([
-                               Normalization(),
-                               ToTensor()
-                           ]))
+                          transform=transforms.Compose([
+                              Normalization(),
+                              ToTensor()
+                          ]))
 
-    train_loader = DataLoader(train_set, batch_size=32, shuffle=True, num_workers=8)
-    test_loader = DataLoader(test_set, batch_size=32, shuffle=False, num_workers=8)
+    train_loader = DataLoader(train_set, batch_size=args.batch_size, shuffle=True, num_workers=8)
+    test_loader = DataLoader(test_set, batch_size=args.batch_size, shuffle=False, num_workers=8)
 
     model = Kiwi(config.nb_kids, args.structure)
     model.cuda()
     if args.load_state is not None:
         model.load_state_dict(torch.load(args.load_state))
     today = date.today()
-    model_save_path = "model/model%s_%s.pt" % (suffix, today)
-    history_save_path = "model/history%s_%s.p" % (suffix, today)
+    model_save_path = os.path.join(config.model_folder, "%s_model_%s.pt" % (today, suffix))
+
+    history_save_path = os.path.join(config.model_folder, "history/%s_history%s_.p" % (today, suffix))
 
     criterion = nn.CrossEntropyLoss(weight=torch.Tensor([0.25, 1, 1, 1, 1, 1]).cuda())
     optimizer = optim.SGD(model.parameters(), lr=args.learning_rate, momentum=0.9)
@@ -149,18 +152,18 @@ if __name__ == '__main__':
             optimizer.step()
             running_loss += loss.item()
 
-            if i % args.print_rate == args.print_rate-1:
+            if i % args.print_rate == args.print_rate - 1:
                 print('[%d, %5d] loss: %.3f' % (epoch + 1, i + 1, running_loss / args.print_rate))
                 running_loss = 0.0
 
             loss_history.append((epoch, i, round(loss.item(), 3)))
         stop = timeit.default_timer()
         time = stop - start
-        print('Epoch Time: %d:%d:%df'  %(time//360, (time%3600)//60, (time%3600)%60))
+        print('Epoch Time: %d:%d:%d' % (time // 360, (time % 3600) // 60, (time % 3600) % 60))
 
         torch.save(model.state_dict(), model_save_path)
         save_history(history_save_path, loss_history)
-        if epoch % args.accuracy_rate == args.accuracy_rate-1:
+        if epoch % args.accuracy_rate == args.accuracy_rate - 1:
             accuracy(model, test_loader)
 
     print('Finished Training')

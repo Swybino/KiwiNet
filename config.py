@@ -10,3 +10,6 @@ CONFIDENCE_KEY = "confidence"
 ## NETWORK PARAMETERS
 nb_kids = 6
 video_root = "data/videos"
+eye_img_root = "data/eyes_img"
+inputs_dir = "data/inputs"
+model_folder = "data/eye_img_models"

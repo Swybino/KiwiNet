@@ -16,6 +16,7 @@ class Kiwi(nn.Module):
             self.layers_list.append(nn.Linear(param_list[i], param_list[i+1]))
             self.layers_list.append(nn.ReLU())
             self.layers_list.append(nn.BatchNorm1d(param_list[i+1]))
+            self.layers_list.append(nn.Dropout(0.25))
         self.core = nn.Sequential(*self.layers_list)
         self.out1 = nn.Linear(param_list[-1], n_out)
 
