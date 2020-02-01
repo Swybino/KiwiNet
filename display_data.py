@@ -21,14 +21,15 @@ def display_file_data(video, frame, df=None):
     if args.anonymize:
         for name, item in data.items():
             bbox = np.array(item[config.BBOX_KEY]) * img_size / 640
-            bbox = bbox.astype(int)
+            bbox = list(utils.get_roi(img, bbox, scale=1.3))
+            bbox = [bbox[0],bbox[1],bbox[2]-bbox[0],bbox[3]-bbox[1]]
             viewer.blur(bbox)
 
     if args.bbox:
         for name, item in data.items():
             bbox = np.array(item[config.BBOX_KEY]) * img_size / 640
             bbox = bbox.astype(int)
-            viewer.plt_bbox(bbox, name)
+            viewer.plt_bbox(bbox, name, thickness=2)
 
     if args.landmarks:
         for name, item in data.items():
