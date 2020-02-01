@@ -12,4 +12,4 @@ nb_kids = 6
 video_root = "data/videos"
 eye_img_root = "data/eyes_img"
 inputs_dir = "data/inputs"
-model_folder = "data/flat_models"
+model_folder = "model/flat_models"
