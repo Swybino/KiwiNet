@@ -126,10 +126,11 @@ def save_results(file, videos, frames, names, results):
     if os.path.exists(file):
         df = pd.read_csv(file)
     else:
+        print("creating dump file", file)
         df = pd.DataFrame(columns=["video", "frame", "name", "target"])
 
     for i in range(len(results)):
-        df = df.append(pd.Series([videos[i], frames[i], names[i], results[i]], index=df.columns), ignore_index=True)
+        df = df.append(pd.Series([videos[i], int(frames[i]), names[i], results[i]], index=df.columns), ignore_index=True)
     df.to_csv(file, index=False)
 
 if __name__ == "__main__":

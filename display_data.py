@@ -17,8 +17,6 @@ def display_file_data(video, frame, df=None):
     img = Video(os.path.join(config.video_root, "%s.MP4" % video))[int(frame)]
     img_size = img.shape[0]
     viewer = Viewer(img)
-
-
     for name, item in data.items():
         if args.anonymize:
             bbox = np.array(item[config.BBOX_KEY]) * img_size / 640
@@ -41,10 +39,11 @@ def display_file_data(video, frame, df=None):
 
         if df is not None:
             bbox = np.array(item[config.BBOX_KEY]) * img_size / 640
-            target = df.loc[(df['video'] == video) & (df['frame'] == frame) & df['name'] == name]['target'].values[0]
+            target = df.loc[(df['video'] == video) & (df['frame'] == frame) & (df['name'] == name)]['target'].values[0]
             bbox_target = np.array(data[target][config.BBOX_KEY]) * img_size / 640
             viewer.plt_results([bbox[0] + bbox[2] / 2, bbox[1] + bbox[3] / 2],
-                               [bbox_target[0] + bbox_target[2] / 2, bbox_target[1] + bbox_target[3] / 2])
+                               [bbox_target[0] + bbox_target[2] / 2, bbox_target[1] + bbox_target[3] / 2],
+                               color=config.kids_color[name])
 
     if args.show:
         viewer.show()
@@ -63,7 +62,7 @@ if __name__ == '__main__':
     parser.add_argument('-v', '--videos', nargs='+', type=str, help='')
     parser.add_argument('-f', '--frames', nargs='+', type=int, help='')
     parser.add_argument('-r', '--frame_range', nargs='+', type=int, help='')
-    parser.add_argument('-d', '--data', nargs='+', type=int, help='')
+    parser.add_argument('-d', '--data', type=str, help='')
     args = parser.parse_args()
 
     if args.videos is not None and (args.frames is not None or args.frame_range is not None):

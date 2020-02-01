@@ -75,19 +75,19 @@ class Viewer:
         cv2.line(self.img, (int(tdx), int(tdy)), (int(x2), int(y2)), (0, 255, 0), 2)
         cv2.line(self.img, (int(tdx), int(tdy)), (int(x3), int(y3)), (255, 56, 0), 2)
 
-    def plt_results(self, origin, focus):
+    def plt_results(self, origin, focus, color=(0, 0, 255)):
         if np.array_equal(origin, focus):
-            color = (0, 0, 255)
             cv2.circle(self.img, tuple(([int(i) for i in origin])), 10, color)
             pt1 = tuple(([int(i-12) for i in origin]))
             pt2 = tuple(([int(i+12) for i in origin]))
             cv2.line(self.img, pt1, pt2, color)
         else:
             pt1, pt2 = np.array(origin), np.array(focus)
+            offset = np.array([np.random.randint(-10,10), np.random.randint(-10, 10)])
             v = pt2 - pt1
-            pt1, pt2 = pt1 + 0.1 * v, pt1 + 0.8 * v
+            pt1, pt2 = pt1 + 0.1 * v + offset, pt1 + 0.8 * v +offset
             pt1, pt2 = tuple([int(i) for i in pt1]), tuple([int(i) for i in pt2])
-            cv2.arrowedLine(self.img, pt1, pt2, (0, 0, 255), 5)
+            cv2.arrowedLine(self.img, pt1, pt2, color, 5)
 
     def show(self):
         cv2.imshow("img", self.img)

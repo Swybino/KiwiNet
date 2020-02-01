@@ -69,8 +69,14 @@ class FoADataset(Dataset):
         else:
             label = 0
 
-        sample = {"inputs": inputs, "labels": label, "frame": labels["frame"], "name_label": labels["target"],
-                  "names_list": name_list, "video": labels["video"], "positions": torch.Tensor(main_pos + bboxes)}
+        sample = {"inputs": inputs,
+                  "labels": label,
+                  "frame": labels["frame"],
+                  "name_label": labels["target"],
+                  "name": labels["name"],
+                  "names_list": name_list,
+                  "video": labels["video"],
+                  "positions": torch.Tensor(main_pos + bboxes)}
 
         if self.transform:
             sample = self.transform(sample)

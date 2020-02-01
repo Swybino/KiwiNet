@@ -15,9 +15,9 @@ from utils.video import Video
 from utils.viewer import Viewer
 import os
 import timeit
-import math
 
-def accuracy(net, test_loader, *, confusion_matrix=True, visualize=False):
+
+def accuracy(net, test_loader, *, confusion_matrix=True, save=False):
     correct = 0
     total = 0
     cm = ConfusionMatrix()
@@ -32,6 +32,12 @@ def accuracy(net, test_loader, *, confusion_matrix=True, visualize=False):
 
             # display_results(test_data, predicted)
             names_outputs = output_processing(outputs, test_data['names_list'])
+            if save:
+                utils.save_results(args.test_save,
+                                   test_data['video'],
+                                   test_data['frame'],
+                                   test_data['name'],
+                                   names_outputs)
 
             if confusion_matrix:
                 cm.add_results(test_data['name_label'], names_outputs)
@@ -41,14 +47,8 @@ def accuracy(net, test_loader, *, confusion_matrix=True, visualize=False):
     model.train()
     cm.normalize()
     print("Accuracy: %0.4f" % (correct / total), total, correct, cm, sep="\n")
+
     return correct / total, cm
-
-
-def save_results(data, frame):
-    with open("", 'wb') as f:
-        pickle.dump(data, f)
-    print("History file written")
-    return
 
 
 def display_results(data, predicted):
@@ -91,6 +91,7 @@ if __name__ == '__main__':
     parser.add_argument('--print_rate', type=int, default=200, help='print every * mini epochs')
     parser.add_argument('--accuracy_rate', type=int, default=10, help='tests accuracy every * epochs')
     parser.add_argument('--batch_size', type=int, default=16, help='number of data per batch')
+    parser.add_argument('-t', '--test_save', type=str, help="testing save file")
 
     args = parser.parse_args()
     suffix = utils.build_suffix(args.structure)
@@ -135,7 +136,7 @@ if __name__ == '__main__':
     optimizer = optim.SGD(model.parameters(), lr=args.learning_rate, momentum=0.9)
     loss_history = []
 
-    accuracy(model, test_loader)
+    # accuracy(model, test_loader)
     for epoch in range(args.epochs):  # loop over the dataset multiple times
         start = timeit.default_timer()
         model.train(True)
@@ -143,7 +144,8 @@ if __name__ == '__main__':
         for i, data in enumerate(train_loader, 0):
 
             inputs, target = data['inputs'], data['labels']
-            inputs, target = inputs.cuda(), target.cuda()
+            inputs.cuda()
+            target.cuda()
             # zero the parameter gradients
             optimizer.zero_grad()
             outputs = model(inputs)
@@ -157,13 +159,15 @@ if __name__ == '__main__':
                 running_loss = 0.0
 
             loss_history.append((epoch, i, round(loss.item(), 3)))
+
         stop = timeit.default_timer()
         time = stop - start
         print('Epoch Time: %d:%d:%d' % (time // 360, (time % 3600) // 60, (time % 3600) % 60))
 
         torch.save(model.state_dict(), model_save_path)
         save_history(history_save_path, loss_history)
-        if epoch % args.accuracy_rate == args.accuracy_rate - 1:
+        if args.accuracy_rate > 0 and epoch % args.accuracy_rate == args.accuracy_rate - 1:
             accuracy(model, test_loader)
 
+    accuracy(model, test_loader, save=args.test_save is not None)
     print('Finished Training')
