@@ -77,8 +77,11 @@ class Viewer:
 
     def plt_results(self, origin, focus):
         if np.array_equal(origin, focus):
-            pt1 = tuple(([int(i) for i in origin]))
-            cv2.circle(self.img, pt1, 2, (0, 0, 255))
+            color = (0, 0, 255)
+            cv2.circle(self.img, tuple(([int(i) for i in origin])), 10, color)
+            pt1 = tuple(([int(i-12) for i in origin]))
+            pt2 = tuple(([int(i+12) for i in origin]))
+            cv2.line(self.img, pt1, pt2, color)
         else:
             pt1, pt2 = np.array(origin), np.array(focus)
             v = pt2 - pt1

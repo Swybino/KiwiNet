@@ -3,6 +3,9 @@ import os
 import cv2
 import numpy as np
 import math
+
+import pandas as pd
+
 import config
 from utils.video import Video
 import json
@@ -118,6 +121,16 @@ def rotate_point(centerPoint, point, angle):
     temp_point = temp_point[0] + centerPoint[0], temp_point[1] + centerPoint[1]
     return temp_point
 
+
+def save_results(file, videos, frames, names, results):
+    if os.path.exists(file):
+        df = pd.read_csv(file)
+    else:
+        df = pd.DataFrame(columns=["video", "frame", "name", "target"])
+
+    for i in range(len(results)):
+        df = df.append(pd.Series([videos[i], frames[i], names[i], results[i]], index=df.columns), ignore_index=True)
+    df.to_csv(file, index=False)
 
 if __name__ == "__main__":
     print(build_suffix([512, 512, 512, 1024, 1024]))

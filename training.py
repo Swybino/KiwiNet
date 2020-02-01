@@ -63,6 +63,7 @@ def display_results(data, predicted):
         v.show()
     return
 
+
 def output_processing(outputs, names_list):
     r = []
     _, predicted = torch.max(outputs.data, 1)
