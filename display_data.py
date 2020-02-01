@@ -17,30 +17,38 @@ def display_file_data(video, frame, df=None):
     img = Video(os.path.join(config.video_root, "%s.MP4" % video))[int(frame)]
     img_size = img.shape[0]
     viewer = Viewer(img)
-    for name, item in data.items():
-        if args.anonymize:
+
+    if args.anonymize:
+        for name, item in data.items():
             bbox = np.array(item[config.BBOX_KEY]) * img_size / 640
             bbox = bbox.astype(int)
             viewer.blur(bbox)
 
-        if args.bbox:
+    if args.bbox:
+        for name, item in data.items():
             bbox = np.array(item[config.BBOX_KEY]) * img_size / 640
             bbox = bbox.astype(int)
             viewer.plt_bbox(bbox, name)
 
-        if args.landmarks:
+    if args.landmarks:
+        for name, item in data.items():
             landmarks = np.array(item[config.LANDMARKS_KEY]) * img_size / 640
             viewer.plt_landmarks(landmarks)
 
-        if args.pose:
+    if args.pose:
+        for name, item in data.items():
             bbox = np.array(item[config.BBOX_KEY]) * img_size / 640
             pose = item[config.POSE_KEY]
             viewer.plt_axis(pose[0], pose[1], pose[2], bbox[0] + bbox[2] / 2, bbox[1] + bbox[3] / 2)
 
-        if df is not None:
+    if df is not None:
+        for name, item in data.items():
             bbox = np.array(item[config.BBOX_KEY]) * img_size / 640
             target = df.loc[(df['video'] == video) & (df['frame'] == frame) & (df['name'] == name)]['target'].values[0]
-            bbox_target = np.array(data[target][config.BBOX_KEY]) * img_size / 640
+            if target == "z":
+                bbox_target = bbox
+            else:
+                bbox_target = np.array(data[target][config.BBOX_KEY]) * img_size / 640
             viewer.plt_results([bbox[0] + bbox[2] / 2, bbox[1] + bbox[3] / 2],
                                [bbox_target[0] + bbox_target[2] / 2, bbox_target[1] + bbox_target[3] / 2],
                                color=config.kids_color[name])
