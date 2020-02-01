@@ -3,9 +3,7 @@ import math
 import config
 from utils import utils
 import os
-from side_script.pose_estimator import solve_head_pose
-import numpy as np
-from side_script.range_processor import RangeProcessor
+from pose_estimator import solve_head_pose
 
 
 class DataProcessor:
@@ -150,7 +148,6 @@ if __name__ == "__main__":
     dp = DataProcessor(intake, video_name)
     dp.set_max_angles(100, 55)
     dp.do_all([dp.get_pose_from_landmarks, dp.compare_sizes, dp.detect_high_angles], out)
-    dp = DataProcessor(out, video_name)
     print(dp.percentage_blank())
     print("----OK----")
 

@@ -1,5 +1,4 @@
 import cv2
-import config
 
 
 class Video:
@@ -17,10 +16,12 @@ class Video:
     def __getitem__(self, i):
         self.cap.set(cv2.CAP_PROP_POS_FRAMES, i)
         ret, frame = self.cap.read()
-        if ret or (self.end is not None and self._index >= self.end):
+        self.cap.release()
+        if ret:
             return cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         else:
             raise IndexError()
+
 
     def __next__(self):
         ret, frame = self.cap.read()
@@ -32,7 +33,6 @@ class Video:
 
 if __name__ == '__main__':
     for i, v in enumerate(Video(start=20)):
-
         print(i)
         if i > 50:
             break

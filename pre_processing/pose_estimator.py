@@ -43,7 +43,7 @@ def solve_head_pose(landmarks):
 
     # print("roll: %d, pitch %d, yaw %d" % (roll, pitch, yaw))
 
-    return roll, pitch, yaw
+    return int(roll), int(pitch), int(yaw)
 
 
 def face_orientation(frame, landmarks):
