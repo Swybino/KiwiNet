@@ -144,8 +144,7 @@ if __name__ == '__main__':
         for i, data in enumerate(train_loader, 0):
 
             inputs, target = data['inputs'], data['labels']
-            inputs.cuda()
-            target.cuda()
+            inputs, target = inputs.cuda(), target.cuda()
             # zero the parameter gradients
             optimizer.zero_grad()
             outputs = model(inputs)
