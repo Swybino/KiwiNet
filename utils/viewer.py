@@ -26,7 +26,7 @@ class Viewer:
         p2 = (int(bbox[0] + bbox[2]), int(bbox[1] + bbox[3]))
         cv2.rectangle(self.img, p1, p2, color, **kwargs)
         p1 = (p1[0], p1[1] - 10)
-        cv2.putText(self.img, str(label), p1, cv2.FONT_HERSHEY_DUPLEX, 1, color)
+        cv2.putText(self.img, str(label), p1, cv2.FONT_HERSHEY_DUPLEX, self.img.shape[0]/700, color)
         return
 
     def plt_landmarks(self, landmarks, color=LANDMARK_COLOR):
