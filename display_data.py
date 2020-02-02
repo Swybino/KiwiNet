@@ -1,7 +1,7 @@
 import os
 
 import pandas as pd
-
+from utils.confusion_matrix import ConfusionMatrix
 from utils.video import Video
 import utils.utils as utils
 from utils.viewer import Viewer
@@ -44,14 +44,16 @@ def display_file_data(video, frame, df=None):
     if df is not None:
         for name, item in data.items():
             bbox = np.array(item[config.BBOX_KEY]) * img_size / 640
-            target = df.loc[(df['video'] == video) & (df['frame'] == frame) & (df['name'] == name)]['target'].values[0]
-            if target == "z":
-                bbox_target = bbox
-            else:
-                bbox_target = np.array(data[target][config.BBOX_KEY]) * img_size / 640
-            viewer.plt_results([bbox[0] + bbox[2] / 2, bbox[1] + bbox[3] / 2],
-                               [bbox_target[0] + bbox_target[2] / 2, bbox_target[1] + bbox_target[3] / 2],
-                               color=config.kids_color[name])
+            target = df.loc[(df['video'] == video) & (df['frame'] == frame) & (df['name'] == name)]
+            if len(target) > 0:
+                target = target['target'].values[0]
+                if target == "z":
+                    bbox_target = bbox
+                else:
+                    bbox_target = np.array(data[target][config.BBOX_KEY]) * img_size / 640
+                viewer.plt_results([bbox[0] + bbox[2] / 2, bbox[1] + bbox[3] / 2],
+                                   [bbox_target[0] + bbox_target[2] / 2, bbox_target[1] + bbox_target[3] / 2],
+                                   color=config.kids_color[name])
 
     if args.show:
         viewer.show()
@@ -71,33 +73,43 @@ if __name__ == '__main__':
     parser.add_argument('-f', '--frames', nargs='+', type=int, help='')
     parser.add_argument('-r', '--frame_range', nargs='+', type=int, help='')
     parser.add_argument('-d', '--data', type=str, help='')
+    parser.add_argument('--labels', type=str, help='')
     args = parser.parse_args()
 
-    if args.videos is not None and (args.frames is not None or args.frame_range is not None):
-        if args.frames is not None:
-            frames_list = args.frames
-        elif args.frame_range is not None:
-            frames_list = range(args.frame_range[0],args.frame_range[1])
-        else: frames_list = []
-
-        if args.data is not None:
-            df = pd.read_csv(args.data)
-        else:
-            df = None
-
-        for v in args.videos:
-            for f in frames_list:
-                display_file_data(v, f, df)
-
-    elif args.data is not None:
+    if args.data is not None and args.labels is not None:
         df = pd.read_csv(args.data)
-        for v in df.video.unique():
-            for f in df.frame.unique():
-                display_file_data(v, f, df)
+        labels = pd.read_csv(args.labels)
+        prediction_list, labels_list = np.array(df["target"]), np.array(labels["target"])
+        cm = ConfusionMatrix()
+        cm.add_results(labels_list, prediction_list)
+        cm.normalize()
+        accuracy = (prediction_list == labels_list).sum() / prediction_list.shape[0]
+        print(accuracy, cm)
 
-    else:
-        for file in os.listdir(config.inputs_dir):
-            tmp = file[:-5].split("_")
-            f = tmp[-1]
-            v = "_".join(tmp)
-            display_file_data(v, f)
+    if args.show or args.out is not None:
+        if args.videos is not None and (args.frames is not None or args.frame_range is not None):
+            if args.frames is not None:
+                frames_list = args.frames
+            elif args.frame_range is not None:
+                frames_list = range(args.frame_range[0],args.frame_range[1])
+            else: frames_list = []
+            if args.data is not None:
+                df = pd.read_csv(args.data)
+            else:
+                df = None
+            for v in args.videos:
+                for f in frames_list:
+                    display_file_data(v, f, df)
+
+        elif args.data is not None:
+            df = pd.read_csv(args.data)
+            for v in df.video.unique():
+                print("#######", v)
+                for f in df.loc[(df["video"]== v)].frame.unique():
+                    display_file_data(v, f, df)
+        else:
+            for file in os.listdir(config.inputs_dir):
+                tmp = file[:-5].split("_")
+                f = tmp[-1]
+                v = "_".join(tmp)
+                display_file_data(v, f)
