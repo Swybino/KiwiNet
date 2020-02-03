@@ -75,8 +75,7 @@ class FoADataset(Dataset):
                   "name_label": labels["target"],
                   "name": labels["name"],
                   "names_list": name_list,
-                  "video": labels["video"],
-                  "positions": torch.Tensor(main_pos + bboxes)}
+                  "video": labels["video"]}
 
         if self.transform:
             sample = self.transform(sample)
@@ -92,12 +91,17 @@ class RandomPermutations(object):
         return
 
     def __call__(self, sample):
-        out = sample["results"]
-        keys = list(out.keys())
-        idxs = np.array([idx for idx in range(len(keys))])
+        names_list = sample["names_list"]
+        idxs = np.array([idx for idx in range(1, len(names_list))])
         np.random.shuffle(idxs)
-        sample["inputs"] = np.array([sample["inputs"][i] for i in idxs])
-        sample["results"] = {keys[i]: out[keys[i]] for i in idxs}
+        idxs = list(idxs)
+        sample["names_list"] = [sample["names_list"][0]] + [sample["names_list"][idx] for idx in idxs]
+        if sample["labels"] > 0:
+            sample["labels"] = idxs.index(sample["labels"])+1
+        new_input = []
+        for i in idxs:
+            new_input = np.concatenate((new_input,sample["inputs"][3+2*i:5+2*i]))
+        sample["inputs"] = np.concatenate((sample["inputs"][:5], new_input), axis=0)
         return sample
 
 
@@ -110,14 +114,17 @@ class RandomTranslation(object):
         self.img_size = img_size
 
     def __call__(self, sample):
+        print("#######",sample)
         x_shift = np.random.randint(-10, 10)
         y_shift = np.random.randint(-10, 10)
         inputs = sample["inputs"]
         for i in range(3, len(inputs), 2):
-            inputs[i] += x_shift
-            inputs[i+1] += y_shift
+            if inputs[i] > 0 and inputs[i+1] > 0:
+                inputs[i] += x_shift
+                inputs[i+1] += y_shift
 
         sample["inputs"] = inputs
+        print(sample)
         return sample
 
 
@@ -126,6 +133,7 @@ class Normalization(object):
         self.img_size = img_size
 
     def __call__(self, sample):
+
         inputs = sample["inputs"]
         inputs[:3] = (inputs[:3]) / 360
         inputs[3:] = inputs[3:] / self.img_size
@@ -146,19 +154,17 @@ if __name__ == "__main__":
     # dataset = FoADataset("data/labels/test_dataset_i.csv", "data/inputs",
     #                      transform=transforms.Compose([Normalization(), ToTensor()]))
 
-    dataset = FoADataset("data/labels/test_labels_patches.csv", "data/inputs",
+    dataset = FoADataset("data/labels/test_test.csv", "data/inputs",
                          transform=transforms.Compose([Normalization(), ToTensor()]))
 
-    dataloader = DataLoader(dataset, batch_size=4,
-                            shuffle=True, num_workers=4)
+    dataloader = DataLoader(dataset, batch_size=4, shuffle=False, num_workers=0)
 
     total = 0
     count = 0
     for i_batch, sample in enumerate(dataloader):
-        print(sample)
         break
         # for l in sample["name_label"]:
         #     if l == "z":
         #         count += 1
         #     total += 1
-    print(count / total)
+    # print(count / total)

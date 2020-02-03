@@ -8,7 +8,7 @@ from torch.utils.data import DataLoader
 from torchvision import transforms
 import config
 import utils.utils as utils
-from dataset import FoADataset, ToTensor, Normalization
+from dataset import FoADataset, ToTensor, Normalization, RandomTranslation, RandomPermutations
 from kiwiNet import Kiwi
 from utils.confusion_matrix import ConfusionMatrix
 from utils.video import Video
@@ -25,12 +25,10 @@ def accuracy(net, test_loader, *, confusion_matrix=True, save=False):
     with torch.no_grad():
         for i, test_data in enumerate(test_loader):
             inputs, labels = test_data['inputs'], test_data['labels']
-            # print(inputs, labels)
             inputs, labels = inputs.cuda(), labels.cuda()
             outputs = net(inputs)
             _, predicted = torch.max(outputs.data, 1)
 
-            # display_results(test_data, predicted)
             names_outputs = output_processing(outputs, test_data['names_list'])
             if save:
                 utils.save_results(args.test_save,
@@ -101,10 +99,12 @@ if __name__ == '__main__':
     if args.train_set is not None:
         train_set_file = args.train_set
     else:
-        train_set_file = "data/labels/train_labels_frame_patches.csv"
+        train_set_file = "data/labels/train_labels_frame_patches30.csv"
 
     train_set = FoADataset(train_set_file, "data/inputs",
                            transform=transforms.Compose([
+                               RandomTranslation(),
+                               RandomPermutations(),
                                Normalization(),
                                ToTensor()
                            ]))
@@ -112,7 +112,7 @@ if __name__ == '__main__':
     if args.test_set is not None:
         test_set_file = args.test_set
     else:
-        test_set_file = "data/labels/test_labels_frame_patches.csv"
+        test_set_file = "data/labels/test_labels_frame_patches30.csv"
 
     test_set = FoADataset(test_set_file, "data/inputs",
                           transform=transforms.Compose([
@@ -132,7 +132,7 @@ if __name__ == '__main__':
 
     history_save_path = os.path.join(config.model_folder, "history/%s_history%s_.p" % (today, suffix))
 
-    criterion = nn.CrossEntropyLoss(weight=torch.Tensor([0.25, 1, 1, 1, 1, 1]).cuda())
+    criterion = nn.CrossEntropyLoss(weight=torch.Tensor([0.4, 1, 1, 1, 1, 1]).cuda())
     optimizer = optim.SGD(model.parameters(), lr=args.learning_rate, momentum=0.9)
     loss_history = []
 
