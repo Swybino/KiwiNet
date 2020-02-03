@@ -114,7 +114,6 @@ class RandomTranslation(object):
         self.img_size = img_size
 
     def __call__(self, sample):
-        print("#######",sample)
         x_shift = np.random.randint(-10, 10)
         y_shift = np.random.randint(-10, 10)
         inputs = sample["inputs"]
@@ -124,7 +123,6 @@ class RandomTranslation(object):
                 inputs[i+1] += y_shift
 
         sample["inputs"] = inputs
-        print(sample)
         return sample
 
 
