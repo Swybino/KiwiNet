@@ -12,11 +12,18 @@ import numpy as np
 
 def display_file_data(video, frame, df=None):
     file = "%s_%s.json" % (video, frame)
-    data = utils.read_input(os.path.join(config.inputs_dir, file))
+    if args.inputs is not None:
+        input_dir = args.inputs
+    else:
+        input_dir = config.inputs_dir
+
+    data = utils.read_input(os.path.join(input_dir, file))
     # print(os.path.join(config.video_root, "%s.MP4" % video))
+    print(frame)
     img = Video(os.path.join(config.video_root, "%s.MP4" % video))[int(frame)]
     img_size = img.shape[0]
     viewer = Viewer(img)
+    viewer.plt_frame_idx(frame)
 
     if args.anonymize:
         for name, item in data.items():
@@ -74,6 +81,7 @@ if __name__ == '__main__':
     parser.add_argument('-f', '--frames', nargs='+', type=int, help='')
     parser.add_argument('-r', '--frame_range', nargs='+', type=int, help='')
     parser.add_argument('-d', '--data', type=str, help='')
+    parser.add_argument('-i', '--inputs', type=str, help='')
     parser.add_argument('--labels', type=str, help='')
     args = parser.parse_args()
 
@@ -106,11 +114,11 @@ if __name__ == '__main__':
             df = pd.read_csv(args.data)
             for v in df.video.unique():
                 print("#######", v)
-                for f in df.loc[(df["video"]== v)].frame.unique():
+                for f in df.loc[(df["video"] == v)].frame.unique():
                     display_file_data(v, f, df)
         else:
             for file in os.listdir(config.inputs_dir):
                 tmp = file[:-5].split("_")
                 f = tmp[-1]
-                v = "_".join(tmp)
+                v = "_".join(tmp[:-1])
                 display_file_data(v, f)

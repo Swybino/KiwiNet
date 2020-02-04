@@ -1,14 +1,78 @@
 import json
 import os
 from random import random
-
+import utils.utils as utils
 import numpy as np
 import pandas as pd
 import torch
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
-
 import config
+
+
+class VideoDataset(Dataset):
+    def __init__(self, root_dir, kids_count =6, transform=None):
+        """
+        Args:
+            csv_file (string): Path to the csv file with annotations.
+            root_dir (string): Directory with all the images.
+            transform (callable, optional): Optional transform to be applied
+                on a sample.
+        """
+        self.kids_count= kids_count
+        self.root_dir = root_dir
+        self.transform = transform
+        self.files_list = os.listdir(self.root_dir)
+
+    def __len__(self):
+        return len(self.files_list * self.kids_count)
+
+    def __getitem__(self, idx):
+        if torch.is_tensor(idx):
+            idx = idx.tolist()
+        file_idx = idx // self.kids_count
+        kid_idx = idx % self.kids_count
+
+        tmp = self.files_list[file_idx][:-5].split("_")
+        frame = tmp[-1]
+        video = "_".join(tmp[:-1])
+
+        file_path = os.path.join(self.root_dir, self.files_list[file_idx])
+        frame_data = utils.read_input(file_path)
+        name = list(frame_data.keys())[kid_idx]
+        name_list = []
+        bboxes = []
+        pose = [0, 0, 0]
+        main_pos = [0, 0]
+        for key, item in frame_data.items():
+            if key == name:
+                bbox = item[config.BBOX_KEY]
+                main_pos = [bbox[0] + 0.5 * bbox[2], bbox[1] + 0.5 * bbox[3]]
+                confidence = item[config.CONFIDENCE_KEY]
+                pose = [x * confidence for x in item[config.POSE_KEY]]
+                name_list.insert(0, key)
+            else:
+                bbox = item[config.BBOX_KEY]
+                bboxes.append(bbox[0] + 0.5 * bbox[2])
+                bboxes.append(bbox[1] + 0.5 * bbox[3])
+                name_list.append(key)
+        if len(bboxes) < 10:
+            for i in range(10 - len(bboxes)):
+                bboxes.append(0)
+        if len(name_list) < 6:
+            for i in range(6 - len(name_list)):
+                name_list.append("z")
+        inputs = np.array(pose + main_pos + bboxes)
+
+        sample = {"inputs": inputs,
+                  "frame": frame,
+                  "name": name,
+                  "names_list": name_list,
+                  "video": video}
+
+        if self.transform:
+            sample = self.transform(sample)
+        return sample
 
 
 class FoADataset(Dataset):
@@ -143,7 +207,7 @@ class ToTensor(object):
     """Convert ndarrays in sample to Tensors."""
 
     def __call__(self, sample):
-        inputs, output = sample["inputs"], sample['labels']
+        inputs = sample["inputs"]
         sample["inputs"] = torch.from_numpy(inputs).type(torch.FloatTensor)
         return sample
 

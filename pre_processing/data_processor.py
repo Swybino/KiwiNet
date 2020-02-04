@@ -141,13 +141,14 @@ class DataProcessor:
 
 
 if __name__ == "__main__":
-    intake = "data/171218_2_1/data"
-    video_name = "171218_2_1"
-    out = "data/171218_2_1/processed_data2"
+    intake = "data/171220_1_2/data"
+    video_name = "171220_1_2"
+    out = "data/171220_1_2/processed_data"
 
     dp = DataProcessor(intake, video_name)
     dp.set_max_angles(100, 55)
-    dp.do_all([dp.get_pose_from_landmarks, dp.compare_sizes, dp.detect_high_angles], out)
+    dp.do_all([dp.get_pose_from_landmarks, dp.compare_sizes, dp.detect_high_angles], out, start=14700, end=15000)
+    dp = DataProcessor(out, video_name)
     print(dp.percentage_blank())
     print("----OK----")
 

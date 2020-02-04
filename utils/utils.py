@@ -5,6 +5,7 @@ import numpy as np
 import math
 
 import pandas as pd
+import torch
 
 import config
 from utils.video import Video
@@ -133,5 +134,13 @@ def save_results(file, videos, frames, names, results):
         df = df.append(pd.Series([videos[i], int(frames[i]), names[i], results[i]], index=df.columns), ignore_index=True)
     df.to_csv(file, index=False)
 
-if __name__ == "__main__":
-    print(build_suffix([512, 512, 512, 1024, 1024]))
+
+def output_processing(outputs, names_list):
+    r = []
+    _, predicted = torch.max(outputs.data, 1)
+    for j in range(predicted.size(0)):
+        if predicted[j] == 0:
+            r.append('z')
+        else:
+            r.append(names_list[predicted[j]][j])
+    return r

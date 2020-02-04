@@ -29,7 +29,7 @@ def accuracy(net, test_loader, *, confusion_matrix=True, save=False):
             outputs = net(inputs)
             _, predicted = torch.max(outputs.data, 1)
 
-            names_outputs = output_processing(outputs, test_data['names_list'])
+            names_outputs = utils.output_processing(outputs, test_data['names_list'])
             if save:
                 utils.save_results(args.test_save,
                                    test_data['video'],
@@ -59,17 +59,6 @@ def display_results(data, predicted):
         v.plt_results(kid, focus)
         v.show()
     return
-
-
-def output_processing(outputs, names_list):
-    r = []
-    _, predicted = torch.max(outputs.data, 1)
-    for j in range(predicted.size(0)):
-        if predicted[j] == 0:
-            r.append('z')
-        else:
-            r.append(names_list[predicted[j]][j])
-    return r
 
 
 def save_history(file_path, data):
@@ -130,7 +119,7 @@ if __name__ == '__main__':
     today = date.today()
     model_save_path = os.path.join(config.model_folder, "%s_model_%s.pt" % (today, suffix))
 
-    history_save_path = os.path.join(config.model_folder, "history/%s_history%s_.p" % (today, suffix))
+    history_save_path = os.path.join(config.model_folder, "history/%s_history_%s.p" % (today, suffix))
 
     criterion = nn.CrossEntropyLoss(weight=torch.Tensor([0.4, 1, 1, 1, 1, 1]).cuda())
     optimizer = optim.SGD(model.parameters(), lr=args.learning_rate, momentum=0.9)
