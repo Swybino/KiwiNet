@@ -49,18 +49,6 @@ def accuracy(net, test_loader, *, confusion_matrix=True, save=False):
     return correct / total, cm
 
 
-def display_results(data, predicted):
-    print(predicted)
-    for i in range(predicted.size(0)):
-        video_path = os.path.join(config.video_root, "%s.MP4" % data["video"][i])
-        v = Viewer(Video(video_path)[data["frame"][i]])
-        print("######", data["name_label"][i])
-        kid, focus = data["positions"][i][0:2], data["positions"][i][2 * predicted[i]:2 + 2 * predicted[i]]
-        v.plt_results(kid, focus)
-        v.show()
-    return
-
-
 def save_history(file_path, data):
     with open(file_path, 'wb') as f:
         pickle.dump(data, f)
@@ -79,6 +67,7 @@ if __name__ == '__main__':
     parser.add_argument('--accuracy_rate', type=int, default=10, help='tests accuracy every * epochs')
     parser.add_argument('--batch_size', type=int, default=16, help='number of data per batch')
     parser.add_argument('-t', '--test_save', type=str, help="testing save file")
+    parser.add_argument('-w', '--weights', nargs='+', type=float, help="weight")
 
     args = parser.parse_args()
     suffix = utils.build_suffix(args.structure)
@@ -121,7 +110,12 @@ if __name__ == '__main__':
 
     history_save_path = os.path.join(config.model_folder, "history/%s_history_%s.p" % (today, suffix))
 
-    criterion = nn.CrossEntropyLoss(weight=torch.Tensor([0.2, 1, 1, 1, 1, 1]).cuda())
+    if args.weights is not None and len(args.weights) == config.nb_kids:
+        weights = args.weights
+    else:
+        weights = [0.4, 1.0, 1.0, 1.0, 1.0, 1.0]
+
+    criterion = nn.CrossEntropyLoss(weight=torch.FloatTensor(weights).cuda())
     optimizer = optim.SGD(model.parameters(), lr=args.learning_rate, momentum=0.9)
     loss_history = []
 
