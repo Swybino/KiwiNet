@@ -121,7 +121,7 @@ if __name__ == '__main__':
 
     history_save_path = os.path.join(config.model_folder, "history/%s_history_%s.p" % (today, suffix))
 
-    criterion = nn.CrossEntropyLoss(weight=torch.Tensor([0.4, 1, 1, 1, 1, 1]).cuda())
+    criterion = nn.CrossEntropyLoss(weight=torch.Tensor([0.2, 1, 1, 1, 1, 1]).cuda())
     optimizer = optim.SGD(model.parameters(), lr=args.learning_rate, momentum=0.9)
     loss_history = []
 
