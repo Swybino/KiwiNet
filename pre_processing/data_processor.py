@@ -97,7 +97,7 @@ class DataProcessor:
                     function()
             self.write_frame_data(out_dir)
 
-    def compare_sizes(self, out_dir=None):
+    def compare_sizes(self):
         for name, data in self.frame_data.items():
             bbox = data[config.BBOX_KEY]
             landmarks = data[config.LANDMARKS_KEY]
@@ -109,13 +109,13 @@ class DataProcessor:
             self.get_item(idx)
             self.detect_high_angles(out_dir)
 
-    def detect_high_angles(self, out_dir=None):
+    def detect_high_angles(self):
         for name, kid_data in self.frame_data.items():
-            if not -self.max_yaw < kid_data[config.POSE_KEY][0] < self.max_yaw \
-                    or not -self.max_pitch < kid_data[config.POSE_KEY][1] < self.max_pitch:
+            if not -self.max_yaw < kid_data[config.POSE_KEY][0]*180 < self.max_yaw \
+                    or not -self.max_pitch < kid_data[config.POSE_KEY][1]*180 < self.max_pitch:
                 kid_data[config.CONFIDENCE_KEY] = 0
 
-    def get_pose_from_landmarks(self, out_dir=None):
+    def get_pose_from_landmarks(self):
         for name, kid_data in self.frame_data.items():
             roll, pitch, yaw = solve_head_pose(kid_data[config.LANDMARKS_KEY])
             kid_data[config.POSE_KEY] = [yaw, pitch, roll]

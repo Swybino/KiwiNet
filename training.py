@@ -1,20 +1,20 @@
 import argparse
+import os
 import pickle
+import timeit
 from datetime import date
+
 import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
 from torchvision import transforms
+
 import config
 import utils.utils as utils
-from dataset import FoADataset, ToTensor, Normalization, RandomTranslation, RandomPermutations
+from dataset import FoADataset, ToTensor, RandomTranslation, RandomPermutations
 from kiwiNet import Kiwi
 from utils.confusion_matrix import ConfusionMatrix
-from utils.video import Video
-from utils.viewer import Viewer
-import os
-import timeit
 
 
 def accuracy(net, test_loader, *, confusion_matrix=True, save=False):
@@ -83,7 +83,6 @@ if __name__ == '__main__':
                            transform=transforms.Compose([
                                RandomTranslation(),
                                RandomPermutations(),
-                               Normalization(),
                                ToTensor()
                            ]))
 
@@ -94,7 +93,6 @@ if __name__ == '__main__':
 
     test_set = FoADataset(test_set_file, "data/inputs",
                           transform=transforms.Compose([
-                              Normalization(),
                               ToTensor()
                           ]))
 

@@ -34,18 +34,6 @@ class Evaluator:
             viewer.plt_frame_idx(idx)
             bboxes_list = []
 
-            # viewer.plt_axis(yaw=0, pitch=0, roll=0, tdx=60, tdy=60)
-            # viewer.plt_axis(yaw=0, pitch=0, roll=30, tdx=120, tdy=60)
-            # viewer.plt_axis(yaw=0, pitch=0, roll=45, tdx=180, tdy=60)
-            # viewer.plt_axis(yaw=0, pitch=0, roll=80, tdx=240, tdy=60)
-            #
-            # viewer.plt_axis(yaw=30, pitch=0, roll=0, tdx=60, tdy=120)
-            # viewer.plt_axis(yaw=45, pitch=0, roll=0, tdx=120, tdy=120)
-            # viewer.plt_axis(yaw=80, pitch=0, roll=0, tdx=180, tdy=120)
-            #
-            # viewer.plt_axis(yaw=0, pitch=30, roll=0, tdx=60, tdy=180)
-            # viewer.plt_axis(yaw=0, pitch=45, roll=0, tdx=120, tdy=180)
-            # viewer.plt_axis(yaw=0, pitch=80, roll=0, tdx=180, tdy=180)
             names_list = []
             for name, data in self.dp.get_item(idx).items():
                 names_list.append(name)
@@ -68,7 +56,7 @@ class Evaluator:
                 # pose = pose_estimator.solve_pose(landmarks)
                 # print(pose)
 
-                ###
+
                 pose = data[config.POSE_KEY]
                 viewer.plt_axis(pose[0], pose[1], pose[2], bbox[0] + bbox[2] / 2, bbox[1] + bbox[3] / 2)
                 bbox_color = (128, 128, 128)
@@ -134,19 +122,6 @@ class Evaluator:
 
 
 if __name__ == "__main__":
-    # evaluator = Evaluator("data/171214_1/correction_size", "171214_1")
-    # print(evaluator.compare_results())
-
-    # evaluator = Evaluator("data/171214_1/correction_angle_100_45", "171214_1")
-    # print(evaluator.compare_results())
-    # evaluator = Evaluator("data/171214_1/correction_angle_100_50", "171214_1")
-    # print(evaluator.compare_results())
-    # evaluator = Evaluator("data/171214_1/correction_angle_100_55", "171214_1")
-    # print(evaluator.compare_results())
-    # evaluator = Evaluator("data/171214_1/correction_angle_90_50", "171214_1")
-    # print(evaluator.compare_results())
-    # evaluator = Evaluator("data/171214_1/correction_angle_80_50", "171214_1")
-    # print(evaluator.compare_results())
 
     evaluator = Evaluator("data/171214_1/correction_angle", "171214_1")
     print(evaluator.compare_results())

@@ -15,19 +15,19 @@ class Viewer:
         else:
             self.img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         self.img = cv2.resize(self.img, (int(self.img.shape[0] * SCALING), int(self.img.shape[1] *SCALING)))
-        return
+        self.size = self.img.shape[0]
 
     def plt_frame_idx(self, frame_idx):
         cv2.putText(self.img, "Frame %d" % frame_idx, (20, 20), cv2.FONT_HERSHEY_DUPLEX, 0.6, (255, 255, 255), 1)
 
     def plt_bbox(self, bbox, label="", color=(0, 255, 0), **kwargs):
         bbox = [i*SCALING for i in bbox]
-        p1 = (int(bbox[0]), int(bbox[1]))
-        p2 = (int(bbox[0] + bbox[2]), int(bbox[1] + bbox[3]))
+        p1 = (int(bbox[0]*self.size), int(bbox[1]*self.size))
+        p2 = (int(bbox[0]*self.size + bbox[2]*self.size), int(bbox[1]*self.size + bbox[3]*self.size))
         cv2.rectangle(self.img, p1, p2, color, **kwargs)
-        p1 = (p1[0], p1[1] - 10)
-        cv2.putText(self.img, str(label), p1, cv2.FONT_HERSHEY_DUPLEX, self.img.shape[0]/700, color)
-        return
+        p1 = (p1[0], p1[1] - 15)
+        cv2.putText(self.img, str(label), p1, cv2.FONT_HERSHEY_DUPLEX, self.size/700, color)
+
 
     def plt_landmarks(self, landmarks, color=LANDMARK_COLOR):
         for i in range(len(landmarks[0])):
@@ -42,21 +42,20 @@ class Viewer:
                 final_color = (255, color[1], color[2])
 
             # cv2.putText(self.img, str(i), (int(landmarks[0][i]*SCALING)-5, int(landmarks[1][i]*SCALING)-5), cv2.FONT_HERSHEY_DUPLEX, 0.2, color=(255, 255, 255))
-            cv2.circle(self.img, (int(landmarks[0][i]*SCALING), int(landmarks[1][i]*SCALING)), 1, color=final_color)
+            cv2.circle(self.img, (int(landmarks[0][i]*self.size), int(landmarks[1][i]*self.size)), 1, color=final_color)
 
     def plt_axis(self, yaw, pitch, roll, tdx=None, tdy=None, size=50):
-        pitch = pitch * np.pi / 180
-        yaw = -(yaw * np.pi / 180)
-        roll = roll * np.pi / 180
+        pitch = pitch * np.pi
+        yaw = -(yaw * np.pi)
+        roll = roll * np.pi
 
         if tdx is None and tdy is None:
-            height, width = self.img.shape[:2]
-            tdx = width / 2
-            tdy = height / 2
+            tdx = self.size * 0.5
+            tdy = self.size * 0.5
 
         else:
-            tdx = tdx * SCALING
-            tdy = tdy * SCALING
+            tdx = tdx * self.size
+            tdy = tdy * self.size
 
         # X-Axis pointing to right. drawn in red
         x1 = size * (cos(yaw) * cos(roll)) + tdx
@@ -77,16 +76,16 @@ class Viewer:
 
     def plt_results(self, origin, focus, color=(0, 0, 255)):
         if np.array_equal(origin, focus):
-            cv2.circle(self.img, tuple(([int(i) for i in origin])), 10, color, 5)
-            pt1 = tuple(([int(i-12) for i in origin]))
-            pt2 = tuple(([int(i+12) for i in origin]))
+            cv2.circle(self.img, (int(origin[0]*self.size), int(origin[1]*self.size)), 10, color, 5)
+            pt1 = (int(origin[0]*self.size), int(origin[1]*self.size))
+            pt2 = (int(origin[0]*self.size), int(origin[1]*self.size))
             cv2.line(self.img, pt1, pt2, color, 5)
         else:
             pt1, pt2 = np.array(origin), np.array(focus)
-            offset = np.array([np.random.randint(-10,10), np.random.randint(-10, 10)])
+            offset = np.random.random(2) / 30
             v = pt2 - pt1
-            pt1, pt2 = pt1 + 0.1 * v + offset, pt1 + 0.8 * v +offset
-            pt1, pt2 = tuple([int(i) for i in pt1]), tuple([int(i) for i in pt2])
+            pt1, pt2 = pt1 + 0.1 * v + offset, pt1 + 0.8 * v + offset
+            pt1, pt2 = (int(pt1[0]*self.size), int(pt1[1]*self.size)), (int(pt2[0]*self.size), int(pt2[1]*self.size))
             cv2.arrowedLine(self.img, pt1, pt2, color, 5)
 
     def show(self):
@@ -124,11 +123,13 @@ class Viewer:
         return eval
 
     def blur(self, bbox, ksize=15):
-        sub_face = self.img[bbox[1]:bbox[1] + bbox[3], bbox[0]:bbox[0] + bbox[2]]
+        crop_box = [int(bbox[1] * self.size), int((bbox[1] + bbox[3]) * self.size),
+                   int(bbox[0]), int((bbox[0] + bbox[2]) * self.size)]
+        sub_face = self.img[crop_box[0]:crop_box[1], crop_box[2]:crop_box[3]]
         # apply a gaussian blur on this new recangle image
         sub_face = cv2.GaussianBlur(sub_face, (ksize, ksize), 30)
         # merge this blurry rectangle to our final image
-        self.img[bbox[1]:bbox[1] + bbox[3], bbox[0]:bbox[0] + bbox[2]] = sub_face
+        self.img[crop_box[0]:crop_box[1], crop_box[2]:crop_box[3]] = sub_face
 
     def save_img(self, path):
         path = Path(path)
