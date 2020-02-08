@@ -31,11 +31,8 @@ def accuracy(net, test_loader, *, confusion_matrix=True, save=False):
 
             names_outputs = utils.output_processing(outputs, test_data['names_list'])
             if save:
-                utils.save_results(args.test_save,
-                                   test_data['video'],
-                                   test_data['frame'],
-                                   test_data['name'],
-                                   names_outputs)
+                utils.save_results(results_save_path, test_data['video'], test_data['frame'],
+                                   test_data['name'], names_outputs)
 
             if confusion_matrix:
                 cm.add_results(test_data['name_label'], names_outputs)
@@ -66,7 +63,7 @@ if __name__ == '__main__':
     parser.add_argument('--print_rate', type=int, default=200, help='print every * mini epochs')
     parser.add_argument('--accuracy_rate', type=int, default=10, help='tests accuracy every * epochs')
     parser.add_argument('--batch_size', type=int, default=16, help='number of data per batch')
-    parser.add_argument('-t', '--test_save', type=str, help="testing save file")
+    parser.add_argument('-t', '--test_save', action='store_true', help="testing save file")
     parser.add_argument('-w', '--weights', nargs='+', type=float, help="weight")
 
     args = parser.parse_args()
@@ -104,14 +101,25 @@ if __name__ == '__main__':
     if args.load_state is not None:
         model.load_state_dict(torch.load(args.load_state))
     today = date.today()
-    model_save_path = os.path.join(config.model_folder, "%s_model_%s.pt" % (today, suffix))
 
-    history_save_path = os.path.join(config.model_folder, "history/%s_history_%s.p" % (today, suffix))
+    model_folder = "data/models"
+    history_folder = "data/history"
+    results_folder = "data/results"
+    if not os.path.exists(model_folder):
+        os.makedirs(model_folder)
+    if not os.path.exists(history_folder):
+        os.makedirs(history_folder)
+    if not os.path.exists(results_folder):
+        os.makedirs(results_folder)
+
+    model_save_path = os.path.join(model_folder, "%s_model_%s.pt" % (today, suffix))
+    history_save_path = os.path.join(history_folder, "%s_history_%s.p" % (today, suffix))
+    results_save_path = os.path.join(history_folder, "%s_results_%s.csv" % (today, suffix))
 
     if args.weights is not None and len(args.weights) == config.nb_kids:
         weights = args.weights
     else:
-        weights = [0.4, 1.0, 1.0, 1.0, 1.0, 1.0]
+        weights = [0.3, 1.0, 1.0, 1.0, 1.0, 1.0]
 
     criterion = nn.CrossEntropyLoss(weight=torch.FloatTensor(weights).cuda())
     optimizer = optim.SGD(model.parameters(), lr=args.learning_rate, momentum=0.9)
@@ -149,5 +157,5 @@ if __name__ == '__main__':
         if args.accuracy_rate > 0 and epoch % args.accuracy_rate == args.accuracy_rate - 1:
             accuracy(model, test_loader)
 
-    accuracy(model, test_loader, save=args.test_save is not None)
+    accuracy(model, test_loader, save=args.test_save)
     print('Finished Training')
