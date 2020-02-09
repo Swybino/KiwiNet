@@ -44,7 +44,7 @@ class Viewer:
             # cv2.putText(self.img, str(i), (int(landmarks[0][i]*SCALING)-5, int(landmarks[1][i]*SCALING)-5), cv2.FONT_HERSHEY_DUPLEX, 0.2, color=(255, 255, 255))
             cv2.circle(self.img, (int(landmarks[0][i]*self.size), int(landmarks[1][i]*self.size)), 1, color=final_color)
 
-    def plt_axis(self, yaw, pitch, roll, tdx=None, tdy=None, size=50):
+    def plt_axis(self, yaw, pitch, roll, tdx=None, tdy=None, *, size=50, conf=1):
         pitch = pitch * np.pi
         yaw = -(yaw * np.pi)
         roll = roll * np.pi
@@ -70,9 +70,18 @@ class Viewer:
         x3 = size * (sin(yaw)) + tdx
         y3 = size * (-cos(yaw) * sin(pitch)) + tdy
 
-        cv2.line(self.img, (int(tdx), int(tdy)), (int(x1), int(y1)), (0, 0, 255), 2)
-        cv2.line(self.img, (int(tdx), int(tdy)), (int(x2), int(y2)), (0, 255, 0), 2)
-        cv2.line(self.img, (int(tdx), int(tdy)), (int(x3), int(y3)), (255, 56, 0), 2)
+        if conf == 1:
+            color1 = (0, 0, 255)
+            color2 = (0, 255, 0)
+            color3 =(255, 56, 0)
+        else:
+            color1 = (0, 0, 100)
+            color2 = (0, 100, 0)
+            color3 = (100, 10, 0)
+
+        cv2.line(self.img, (int(tdx), int(tdy)), (int(x1), int(y1)), color1, 2)
+        cv2.line(self.img, (int(tdx), int(tdy)), (int(x2), int(y2)), color2, 2)
+        cv2.line(self.img, (int(tdx), int(tdy)), (int(x3), int(y3)), color3, 2)
 
     def plt_results(self, origin, focus, color=(0, 0, 255)):
         if np.array_equal(origin, focus):

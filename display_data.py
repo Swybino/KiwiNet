@@ -25,11 +25,31 @@ def display_file_data(video, frame, df=None):
     viewer = Viewer(img)
     viewer.plt_frame_idx(frame)
 
+    x, y, yw, p, r = 0.25, 0.25, 0.1, 0.1, -0.75
+    viewer.plt_axis(yw, p, r, x, y)
+
+    # angle = 90
+    # r = (r - angle / 180) % 2
+    # if r > 1:
+    #     r = -2 + r
+    # x, y = utils.rotate_coord(x, y, angle)
+    #
+    # viewer.plt_axis(yw, p, r, x, y)
+
+    angle = 180
+    r = (r - angle / 180) % 2
+    if r > 1:
+        r = -2 + r
+    x, y = utils.rotate_coord(x, y, angle)
+    print(r)
+    viewer.plt_axis(yw, p, r, x, y)
+
+
     if args.anonymize:
         for name, item in data.items():
             bbox = item[config.BBOX_KEY]
             bbox = list(utils.get_roi(img, bbox, scale=1.3))
-            bbox = [bbox[0],bbox[1],bbox[2]-bbox[0],bbox[3]-bbox[1]]
+            bbox = [bbox[0], bbox[1], bbox[2] - bbox[0], bbox[3] - bbox[1]]
             viewer.blur(bbox)
 
     if args.bbox:
@@ -47,7 +67,8 @@ def display_file_data(video, frame, df=None):
         for name, item in data.items():
             bbox = item[config.BBOX_KEY]
             pose = item[config.POSE_KEY]
-            viewer.plt_axis(pose[0], pose[1], pose[2], bbox[0] + bbox[2] / 2, bbox[1] + bbox[3] / 2)
+            viewer.plt_axis(pose[0], pose[1], pose[2], bbox[0] + bbox[2] / 2, bbox[1] + bbox[3] / 2,
+                            conf=int(item[config.CONFIDENCE_KEY]))
 
     if df is not None:
         for name, item in data.items():
@@ -100,8 +121,9 @@ if __name__ == '__main__':
             if args.frames is not None:
                 frames_list = args.frames
             elif args.frame_range is not None:
-                frames_list = range(args.frame_range[0],args.frame_range[1])
-            else: frames_list = []
+                frames_list = range(args.frame_range[0], args.frame_range[1])
+            else:
+                frames_list = []
             if args.data is not None:
                 df = pd.read_csv(args.data)
             else:

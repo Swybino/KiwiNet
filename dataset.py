@@ -1,6 +1,6 @@
 import json
 import os
-from random import random
+import random
 import utils.utils as utils
 import numpy as np
 import pandas as pd
@@ -19,7 +19,7 @@ class VideoDataset(Dataset):
             transform (callable, optional): Optional transform to be applied
                 on a sample.
         """
-        self.kids_count= kids_count
+        self.kids_count = kids_count
         self.root_dir = root_dir
         self.transform = transform
         self.files_list = os.listdir(self.root_dir)
@@ -171,7 +171,6 @@ class RandomPermutations(object):
 
 class RandomTranslation(object):
     """
-
     """
 
     def __init__(self, img_size=640):
@@ -185,6 +184,30 @@ class RandomTranslation(object):
             if inputs[i] > 0 and inputs[i+1] > 0:
                 inputs[i] += x_shift
                 inputs[i+1] += y_shift
+
+        sample["inputs"] = inputs
+        return sample
+
+
+class RandomRotation(object):
+    """
+
+    """
+
+    def __init__(self, img_size=640):
+        self.img_size = img_size
+
+    def __call__(self, sample):
+
+        a = [0,90,180,270]
+        angle = random.choice(a)
+        inputs = sample["inputs"]
+        inputs[2] = (inputs[2] - angle/180) % 2
+        if inputs[2] > 1:
+            inputs[2] = -2 + inputs[2]
+        for i in range(3, len(inputs), 2):
+            if inputs[i] > 0 and inputs[i+1] > 0:
+                inputs[i], inputs[i+1] = utils.rotate_coord(inputs[i], inputs[i+1], angle)
 
         sample["inputs"] = inputs
         return sample

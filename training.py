@@ -9,10 +9,10 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
 from torchvision import transforms
-
+import numpy as np
 import config
 import utils.utils as utils
-from dataset import FoADataset, ToTensor, RandomTranslation, RandomPermutations
+from dataset import FoADataset, ToTensor, RandomTranslation, RandomPermutations, RandomRotation
 from kiwiNet import Kiwi
 from utils.confusion_matrix import ConfusionMatrix
 
@@ -36,11 +36,28 @@ def accuracy(net, test_loader, *, confusion_matrix=True, save=False):
 
             if confusion_matrix:
                 cm.add_results(test_data['name_label'], names_outputs)
-
+            # print(test_data['name_label'], type(test_data['name_label']))
             total += labels.size(0)
             correct += (predicted == labels).sum().item()
+
+    for i, test_data in enumerate(test_loader2):
+        labels = np.array(test_data['name_label'])
+        predicted = np.array(["z" for i in labels])
+        if confusion_matrix:
+            cm.add_results(labels, predicted)
+        if save:
+            utils.save_results(results_save_path, test_data['video'], test_data['frame'],
+                               test_data['name'], predicted)
+        total += test_data['labels'].size(0)
+        correct += (predicted == labels).sum().item()
+
     model.train()
     cm.normalize()
+
+    if save:
+        msg = "Epochs: %d\nAccuracy: %0.4f\nTotal: %d\nCorrect:%d\nConfusion matrix:\n%s" % (args.epochs, correct/total, total, correct, cm)
+        with open(accuracy_save_path, 'w') as f:
+            f.write(str(msg))
     print("Accuracy: %0.4f" % (correct / total), total, correct, cm, sep="\n")
 
     return correct / total, cm
@@ -74,24 +91,32 @@ if __name__ == '__main__':
     if args.train_set is not None:
         train_set_file = args.train_set
     else:
-        train_set_file = "data/labels/train_labels_frame_patches30.csv"
+        train_set_file = "data/labels/train_labels_frame_patches30_good.csv"
 
-    train_set = FoADataset(train_set_file, "data/inputs",
+    train_set = FoADataset(train_set_file, config.inputs_dir,
                            transform=transforms.Compose([
                                RandomTranslation(),
                                RandomPermutations(),
+                               RandomRotation(),
                                ToTensor()
                            ]))
 
     if args.test_set is not None:
         test_set_file = args.test_set
     else:
-        test_set_file = "data/labels/test_labels_frame_patches30.csv"
+        test_set_file = "data/labels/test_labels_frame_patches30_good.csv"
 
-    test_set = FoADataset(test_set_file, "data/inputs",
+    test_set = FoADataset(test_set_file, config.inputs_dir,
                           transform=transforms.Compose([
                               ToTensor()
                           ]))
+
+    test_set_file2 = "data/labels/test_labels_frame_patches30_bad.csv"
+    test_set2 = FoADataset(test_set_file, config.inputs_dir,
+                          transform=transforms.Compose([
+                              ToTensor()
+                          ]))
+    test_loader2 = DataLoader(test_set, batch_size=args.batch_size, shuffle=False, num_workers=8)
 
     train_loader = DataLoader(train_set, batch_size=args.batch_size, shuffle=True, num_workers=8)
     test_loader = DataLoader(test_set, batch_size=args.batch_size, shuffle=False, num_workers=8)
@@ -114,7 +139,8 @@ if __name__ == '__main__':
 
     model_save_path = os.path.join(model_folder, "%s_model_%s.pt" % (today, suffix))
     history_save_path = os.path.join(history_folder, "%s_history_%s.p" % (today, suffix))
-    results_save_path = os.path.join(history_folder, "%s_results_%s.csv" % (today, suffix))
+    results_save_path = os.path.join(results_folder, "%s_results_%s.csv" % (today, suffix))
+    accuracy_save_path = os.path.join(results_folder, "%s_accuracy_%s.txt" % (today, suffix))
 
     if args.weights is not None and len(args.weights) == config.nb_kids:
         weights = args.weights

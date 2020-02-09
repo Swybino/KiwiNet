@@ -7,22 +7,20 @@ from pose_estimator import solve_head_pose
 
 
 class DataProcessor:
-    def __init__(self, root_dir, video_title):
+    def __init__(self, root_dir):
         self.root_dir = root_dir
-        self.video_title = video_title
+        self.file_name = None
         self.data_length = len(os.listdir(root_dir))
         self.frame_idx = None
         self.frame_data = None
         self.max_yaw = 90
         self.max_pitch = 50
-
-    def max_len(self):
-        return len(os.listdir(self.root_dir))  # dir is your directory path
-
+        self.max_roll = 100
 
     def set_max_angles(self, yaw, pitch):
         self.max_yaw = yaw
         self.max_pitch = pitch
+
 
     def get_item(self, frame_idx, name=None, key=None):
         if frame_idx != self.frame_idx:
@@ -79,19 +77,15 @@ class DataProcessor:
             out_dir = self.root_dir
         if not os.path.isdir(out_dir):
             os.mkdir(out_dir)
-        path = os.path.join(out_dir, "%s_%d.json" % (self.video_title, self.frame_idx))
+        path = os.path.join(out_dir, self.file_name)
         with open(path, 'w') as outfile:
             json.dump(self.frame_data, outfile)
         print("file written", path)
 
     def do_all(self, functions, out_dir=None, start=0, end=None):
-        if end is None:
-            end = self.data_length
-        if end < 0:
-            end = self.data_length + end
-
-        for idx in range(start, end):
-            self.get_item(idx)
+        for f in os.listdir(self.root_dir):
+            self.frame_data = utils.read_input(os.path.join(self.root_dir, f))
+            self.file_name = f
             if type(functions) == list:
                 for function in functions:
                     function()
@@ -104,21 +98,19 @@ class DataProcessor:
             if not utils.bbox_landmarks_match(bbox, landmarks):
                 data[config.CONFIDENCE_KEY] = 0
 
-    def detect_high_angles_all(self, out_dir=None):
-        for idx in range(self.data_length):
-            self.get_item(idx)
-            self.detect_high_angles(out_dir)
-
     def detect_high_angles(self):
         for name, kid_data in self.frame_data.items():
+            img_angle = utils.get_angle(kid_data[config.BBOX_KEY]) + 90
+            # print(img_angle, "######",kid_data[config.POSE_KEY][2]*180, ((img_angle+kid_data[config.POSE_KEY][2]*180)+180)%360 -180)
             if not -self.max_yaw < kid_data[config.POSE_KEY][0]*180 < self.max_yaw \
-                    or not -self.max_pitch < kid_data[config.POSE_KEY][1]*180 < self.max_pitch:
+                    or not -self.max_pitch < kid_data[config.POSE_KEY][1]*180 < self.max_pitch \
+                    or not -self.max_roll < ((img_angle+kid_data[config.POSE_KEY][2]*180)+180)%360 - 180< self.max_roll:
                 kid_data[config.CONFIDENCE_KEY] = 0
 
     def get_pose_from_landmarks(self):
         for name, kid_data in self.frame_data.items():
             roll, pitch, yaw = solve_head_pose(kid_data[config.LANDMARKS_KEY])
-            kid_data[config.POSE_KEY] = [yaw, pitch, roll]
+            kid_data[config.POSE_KEY] = [yaw/180, pitch/180, roll/180]
 
     def percentage_blank(self):
         """
@@ -127,8 +119,10 @@ class DataProcessor:
         """
         total_count = 0
         blank_count = 0
-        for idx in range(self.data_length):
-            for name, kid_data in self.get_item(idx).items():
+        for f in os.listdir(self.root_dir):
+            self.frame_data = utils.read_input(os.path.join(self.root_dir, f))
+            self.file_name = f
+            for name, kid_data in self.frame_data.items():
                 total_count = total_count + 1
                 if kid_data[config.CONFIDENCE_KEY] == 0:
                     blank_count = blank_count + 1
@@ -141,14 +135,15 @@ class DataProcessor:
 
 
 if __name__ == "__main__":
-    intake = "data/171220_1_2/data"
-    video_name = "171220_1_2"
-    out = "data/171220_1_2/processed_data"
+    intake = "data/inputs_new"
+    # intake = "data/test"
+    out = "data/inputs_roll_delete_100"
 
-    dp = DataProcessor(intake, video_name)
+    dp = DataProcessor(intake)
+    # print(dp.percentage_blank())
     dp.set_max_angles(100, 55)
-    dp.do_all([dp.get_pose_from_landmarks, dp.compare_sizes, dp.detect_high_angles], out, start=14700, end=15000)
-    dp = DataProcessor(out, video_name)
+    dp.do_all([dp.detect_high_angles], out)
+    dp = DataProcessor(out)
     print(dp.percentage_blank())
     print("----OK----")
 

@@ -23,5 +23,5 @@ def separate_dataset(src_file, train_file, test_file, *, sep_factor=0.8, patch_s
 
 
 if __name__ == '__main__':
-    separate_dataset("data/labels/labels.csv", "data/labels/train_labels_frame_patches30.csv",
-                     "data/labels/test_labels_frame_patches30.csv", patch_size=30)
+    separate_dataset("data/labels/labels.csv", "data/labels/train_labels_frame_patches100.csv",
+                     "data/labels/test_labels_frame_patches100.csv", patch_size=100)

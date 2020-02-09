@@ -6,15 +6,16 @@ import math
 
 import pandas as pd
 import torch
-
 import config
 from utils.video import Video
 import json
+
 
 def read_input(file_path):
     with open(file_path, 'r') as f:
         frame_data = json.load(f)
     return frame_data
+
 
 def bbox_iou(boxA, boxB):
     # determine the (x, y)-coordinates of the intersection rectangle
@@ -57,6 +58,33 @@ def gradient(y1, y2, t=1):
     return (y2 - y1) / t
 
 
+def get_angle(bbox):
+    x = bbox[0] + bbox[2]/2 - 0.5
+    y = 0.5 - (bbox[1] + bbox[3]/2)
+    return np.degrees(np.arctan2(y, x))
+
+
+def rotate_coord(x, y, angle):
+    '''
+    Rotate the coordonates of a bounding box
+    :param bbox:
+    :param img:
+    :param angle: 90, 180 or -90
+    :return:
+    '''
+    angle = angle % 360
+    if angle == 0:
+        return x, y
+    elif angle == 90:
+        return y, 1 - x
+    elif angle == 180:
+        return 1 - x, 1 - y
+    elif angle == 270:
+        return 1 - y, x
+    else:
+        raise Exception("angle not conform")
+
+
 def build_suffix(param_list):
     string_char = ""
     count = 1
@@ -71,7 +99,7 @@ def build_suffix(param_list):
             last_value = value
     string_char += "." + (str(last_value) if count == 1 else "%sx%d" % (last_value, count))
 
-    return string_char
+    return string_char[1:]
 
 
 def get_eye_image_from_video(video, frame, landmarks, roll):

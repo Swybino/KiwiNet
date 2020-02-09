@@ -4,16 +4,17 @@ import config
 import os
 import json
 import numpy as np
+import utils.utils as utils
 
 img_dir_path = "data/videos/171214_1"
 max_frame = 9900
-eval_file = "data/171214_1/171214_1_eval.json"
+eval_file = "data/171214_1_eval.json"
 
 
 class Evaluator:
-    def __init__(self, root_dir, video_title):
-
-        self.dp = DataProcessor(root_dir, video_title)
+    def __init__(self, root_dir):
+        self.root_dir = root_dir
+        # self.dp = DataProcessor(root_dir)
         self.viewer = Viewer
         self.max_frame = max_frame
         self.results = {}
@@ -91,16 +92,19 @@ class Evaluator:
         right_count = 0
         true_positive = 0
         true_negative = 0
+        video = "171214_1"
+        for idx, result in self.results.items():
+            file = "%s_%s.json" % (video, idx)
 
-        for idx, data in self.results.items():
-            for name, conf in data.items():
+            data = utils.read_input(os.path.join(self.root_dir, file))
+            for name, conf in result.items():
                 total = total + 1
-                # print(self.data[name][config.CONFIDENCE_KEY])
+                # print(self.result[name][config.CONFIDENCE_KEY])
                 if conf == 1:
                     condition_positive += 1
                 elif conf == 0:
                     condition_negative += 1
-                if self.dp.get_item(int(idx), name, config.CONFIDENCE_KEY) == conf:
+                if data[name][config.CONFIDENCE_KEY] == conf:
                     right_count += 1
                     if conf == 1:
                         true_positive += 1
@@ -123,6 +127,6 @@ class Evaluator:
 
 if __name__ == "__main__":
 
-    evaluator = Evaluator("data/171214_1/correction_angle", "171214_1")
+    evaluator = Evaluator("data/inputs_roll_delete_100")
     print(evaluator.compare_results())
-    evaluator.label_confidence(eval_file, overwrite=False)
+    # evaluator.label_confidence(eval_file, overwrite=False)
