@@ -5,6 +5,7 @@ import os
 def convert_raw_labels(src_folder, dst_file):
     df = pd.DataFrame(columns=["video", "frame", "name", "target"])
     max_frames = [9900, 8000, 10000, 12000]
+    max_frames = []
     for file in os.listdir(src_folder):
         tmp_df = pd.DataFrame(columns=["video", "frame", "name", "target"])
         video = file[:-4]
@@ -22,4 +23,5 @@ def convert_raw_labels(src_folder, dst_file):
 
 
 if __name__ == "__main__":
-    convert_raw_labels("data/raw_labels", "data/labels/labels_originals.csv")
+    # convert_raw_labels("data/raw_labels", "data/labels/labels_originals.csv")
+    convert_raw_labels("data/171220_1_2/labels", "data/171220_1_2/labels/171220_1_2_labels.csv")

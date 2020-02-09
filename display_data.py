@@ -108,13 +108,17 @@ if __name__ == '__main__':
 
     if args.data is not None and args.labels is not None:
         df = pd.read_csv(args.data)
+        df2 = pd.DataFrame(columns=df.columns)
         labels = pd.read_csv(args.labels)
-        prediction_list, labels_list = np.array(df["target"]), np.array(labels["target"])
+        for index, row in labels.iterrows():
+            df2 = df2.append(df.loc[(df["video"] == row["video"]) & (df["frame"] == row["frame"]) & (df["name"] == row["name"])])
+
+        prediction_list, labels_list = np.array(df2["target"]), np.array(labels["target"])
         cm = ConfusionMatrix()
         cm.add_results(labels_list, prediction_list)
         cm.normalize()
         accuracy = (prediction_list == labels_list).sum() / prediction_list.shape[0]
-        print(accuracy, cm)
+        print(accuracy, cm, sep="\n")
 
     if args.show or args.out is not None:
         if args.videos is not None and (args.frames is not None or args.frame_range is not None):
