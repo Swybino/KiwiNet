@@ -42,10 +42,10 @@ def get_roi(img, bbox, *, scale=1, padding=0):
     y_c = bbox[1] + bbox[3] / 2
     new_size = (size * scale) + 2 * padding
 
-    xmin = int(max(0, round(x_c - new_size / 2)))
-    ymin = int(max(0, round(y_c - new_size / 2)))
-    xmax = int(min(img.shape[0]-1, round(x_c + new_size / 2)))
-    ymax = int(min(img.shape[1]-1, round(y_c + new_size / 2)))
+    xmin = max(0, x_c - new_size / 2)
+    ymin = max(0, y_c - new_size / 2)
+    xmax = min(1, x_c + new_size / 2)
+    ymax = min(1, y_c + new_size / 2)
     return xmin, ymin, xmax, ymax
 
 
@@ -58,10 +58,11 @@ def gradient(y1, y2, t=1):
     return (y2 - y1) / t
 
 
-def get_angle(bbox):
-    x = bbox[0] + bbox[2]/2 - 0.5
-    y = 0.5 - (bbox[1] + bbox[3]/2)
-    return np.degrees(np.arctan2(y, x))
+def get_angle(*, bbox=None, x=None, y=None):
+    if bbox is not None:
+        x = bbox[0] + bbox[2]/2
+        y = bbox[1] + bbox[3]/2
+    return np.degrees(np.arctan2(0.5 - y, x - 0.5))
 
 
 def rotate_coord(x, y, angle):
@@ -108,7 +109,7 @@ def get_eye_image_from_video(video, frame, landmarks, roll):
     landmarks = (np.array(landmarks) / 640) * img_size
     image_center = tuple(np.array(img.shape[1::-1]) / 2)
     for i in range(len(landmarks[0])):
-        landmarks[0, i], landmarks[1, i] = rotate_point(image_center, (landmarks[0, i], landmarks[1, i]), -roll)
+        landmarks[0, i], landmarks[1, i] = rotate_point((landmarks[0, i], landmarks[1, i]), -roll, center_point=image_center)
     rotated_img = rotate_image(img, roll)
 
     # print(roll)
@@ -140,15 +141,15 @@ def rotate_image(image, angle):
     return result
 
 
-def rotate_point(centerPoint, point, angle):
+def rotate_point(point, angle, center_point=(0.5, 0.5)):
     """Rotates a point around another centerPoint. Angle is in degrees.
     Rotation is counter-clockwise"""
     angle = math.radians(angle)
-    temp_point = point[0] - centerPoint[0], point[1] - centerPoint[1]
-    temp_point = (temp_point[0] * math.cos(angle) - temp_point[1] * math.sin(angle),
-                  temp_point[0] * math.sin(angle) + temp_point[1] * math.cos(angle))
-    temp_point = temp_point[0] + centerPoint[0], temp_point[1] + centerPoint[1]
-    return temp_point
+    new_point = point[0] - center_point[0], point[1] - center_point[1]
+    new_point = (new_point[0] * math.cos(angle) - new_point[1] * math.sin(angle),
+                  new_point[0] * math.sin(angle) + new_point[1] * math.cos(angle))
+    new_point = new_point[0] + center_point[0], new_point[1] + center_point[1]
+    return new_point[0], new_point[1]
 
 
 def save_results(file, videos, frames, names, results):

@@ -2,8 +2,8 @@ import os
 
 import pandas as pd
 from utils.confusion_matrix import ConfusionMatrix
-from utils.video import Video
 import utils.utils as utils
+from utils.video import Video
 from utils.viewer import Viewer
 import config
 import argparse
@@ -21,29 +21,8 @@ def display_file_data(video, frame, df=None):
     # print(os.path.join(config.video_root, "%s.MP4" % video))
     print(frame)
     img = Video(os.path.join(config.video_root, "%s.MP4" % video))[int(frame)]
-    img_size = img.shape[0]
     viewer = Viewer(img)
     viewer.plt_frame_idx(frame)
-
-    x, y, yw, p, r = 0.25, 0.25, 0.1, 0.1, -0.75
-    viewer.plt_axis(yw, p, r, x, y)
-
-    # angle = 90
-    # r = (r - angle / 180) % 2
-    # if r > 1:
-    #     r = -2 + r
-    # x, y = utils.rotate_coord(x, y, angle)
-    #
-    # viewer.plt_axis(yw, p, r, x, y)
-
-    angle = 180
-    r = (r - angle / 180) % 2
-    if r > 1:
-        r = -2 + r
-    x, y = utils.rotate_coord(x, y, angle)
-    print(r)
-    viewer.plt_axis(yw, p, r, x, y)
-
 
     if args.anonymize:
         for name, item in data.items():
@@ -55,7 +34,6 @@ def display_file_data(video, frame, df=None):
     if args.bbox:
         for name, item in data.items():
             bbox = item[config.BBOX_KEY]
-            bbox = bbox.astype(int)
             viewer.plt_bbox(bbox, name, thickness=2)
 
     if args.landmarks:

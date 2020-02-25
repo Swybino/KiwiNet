@@ -100,7 +100,7 @@ class DataProcessor:
 
     def detect_high_angles(self):
         for name, kid_data in self.frame_data.items():
-            img_angle = utils.get_angle(kid_data[config.BBOX_KEY]) + 90
+            img_angle = utils.get_angle(bbox=kid_data[config.BBOX_KEY]) + 90
             # print(img_angle, "######",kid_data[config.POSE_KEY][2]*180, ((img_angle+kid_data[config.POSE_KEY][2]*180)+180)%360 -180)
             if not -self.max_yaw < kid_data[config.POSE_KEY][0]*180 < self.max_yaw \
                     or not -self.max_pitch < kid_data[config.POSE_KEY][1]*180 < self.max_pitch \

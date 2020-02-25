@@ -28,6 +28,8 @@ class Viewer:
         p1 = (p1[0], p1[1] - 15)
         cv2.putText(self.img, str(label), p1, cv2.FONT_HERSHEY_DUPLEX, self.size/700, color)
 
+    def plt_point(self, x, y, color=LANDMARK_COLOR):
+        cv2.circle(self.img, (int(x * self.size), int(y * self.size)), 1, color=color)
 
     def plt_landmarks(self, landmarks, color=LANDMARK_COLOR):
         for i in range(len(landmarks[0])):
@@ -41,8 +43,7 @@ class Viewer:
             elif i < 17:
                 final_color = (255, color[1], color[2])
 
-            # cv2.putText(self.img, str(i), (int(landmarks[0][i]*SCALING)-5, int(landmarks[1][i]*SCALING)-5), cv2.FONT_HERSHEY_DUPLEX, 0.2, color=(255, 255, 255))
-            cv2.circle(self.img, (int(landmarks[0][i]*self.size), int(landmarks[1][i]*self.size)), 1, color=final_color)
+            self.plt_point(landmarks[0][i], landmarks[1][i], final_color)
 
     def plt_axis(self, yaw, pitch, roll, tdx=None, tdy=None, *, size=50, conf=1):
         pitch = pitch * np.pi
